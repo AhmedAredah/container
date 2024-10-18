@@ -20,6 +20,9 @@ class CONTAINER_EXPORT Container : public QObject
     Q_PROPERTY(ContainerSize containerSize READ getContainerSize WRITE setContainerSize NOTIFY containerSizeChanged FINAL)
     Q_PROPERTY(QVector<Package*> packages READ getPackages WRITE setPackages NOTIFY packagesChanged FINAL)
     Q_PROPERTY(QMap<HaulerType, QVariantMap> customVariables READ getCustomVariables WRITE setCustomVariables NOTIFY customVariablesChanged FINAL)
+    Q_PROPERTY(QString containerCurrentLocation READ getContainerCurrentLocation WRITE setContainerCurrentLocation NOTIFY containerCurrentLocationChanged FINAL)
+    Q_PROPERTY(QVector<QString> containerNextDestinations READ getContainerNextDestinations WRITE setContainerNextDestinations NOTIFY containerNextDestinationsChanged FINAL)
+    Q_PROPERTY(QVector<QString> containerMovementHistory READ getContainerMovementHistory WRITE setContainerMovementHistory NOTIFY containerMovementHistoryChanged FINAL)
 
 public:
     // Enum for container sizes
@@ -74,6 +77,22 @@ public:
     QVariant getCustomVariable(HaulerType hauler, const QString &key) const;
     QVariantMap getCustomVariablesForHauler(HaulerType hauler) const;
 
+    // Getters and Setters for current location
+    QString getContainerCurrentLocation() const;
+    void setContainerCurrentLocation(const QString &location);
+
+    // Getters and Setters for next destinations
+    QVector<QString> getContainerNextDestinations() const;
+    void setContainerNextDestinations(const QVector<QString> &destinations);
+    void addDestination(const QString &destination);
+    bool removeDestination(const QString &destination);
+
+    // Getters and Setters for history
+    QVector<QString> getContainerMovementHistory() const;
+    void setContainerMovementHistory(const QVector<QString> &history);
+    void addMovementHistory(const QString &history);
+    bool removeMovementHistory(const QString &history);
+
     void clear();
 
     QJsonObject toJson() const;
@@ -86,13 +105,18 @@ signals:
     void containerSizeChanged();
     void packagesChanged();
     void customVariablesChanged();
+    void containerCurrentLocationChanged();
+    void containerNextDestinationsChanged();
+    void containerMovementHistoryChanged();
 
 private:
     QString m_containerID;
     ContainerSize m_containerSize;
     QVector<Package*> m_packages;
     QMap<HaulerType, QVariantMap> m_customVariables;
-
+    QString m_containerCurrentLocation;
+    QVector<QString> m_containerNextDestinations;
+    QVector<QString> m_containerMovementHistory;
 
     void deepCopy(const Container &other);  // Helper function to perform deep copy
 };

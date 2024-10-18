@@ -5,43 +5,91 @@
 namespace ContainerCore {
 
 Container::Container(QObject *parent)
-    : QObject(parent) {}
+    : QObject(parent),
+    m_containerSize(twentyFT) {} // Default to a common container size
 
 Container::Container(const QString &id, ContainerSize size, QObject *parent)
     : QObject(parent), m_containerID(id), m_containerSize(size) {
     qDebug() << "Constructor parameter id:" << id;
     qDebug() << "Container constructed with ID:" << m_containerID;
+    m_containerCurrentLocation = "Unknown"; // Default location if not provided
 }
 
 Container::Container(const QJsonObject &json, QObject *parent)
     : QObject(parent)
 {
     // Initialize containerID
+    // Check for the existence of keys and validity of JSON before accessing them
+    if (!json.contains("containerID") || !json["containerID"].isString()) {
+        throw std::invalid_argument("Invalid or missing 'containerID'");
+    }
     m_containerID = json["containerID"].toString();
 
     // Initialize containerSize
+    if (!json.contains("containerSize") || !json["containerSize"].isDouble()) {
+        throw std::invalid_argument("Invalid or missing 'containerSize'");
+    }
     m_containerSize = static_cast<ContainerSize>(json["containerSize"].toInt());
 
+    if (json.contains("containerCurrentLocation") &&
+        json["containerCurrentLocation"].isString()) {
+        m_containerCurrentLocation =
+            json["containerCurrentLocation"].toString();
+    } else {
+        m_containerCurrentLocation =
+            "Unknown"; // Default if not provided or invalid
+    }
+
+    // Check and initialize containerNextDestinations from JSON array
+    if (json.contains("containerNextDestinations") &&
+        json["containerNextDestinations"].isArray()) {
+        QJsonArray nextDestinationsArray =
+            json["containerNextDestinations"].toArray();
+        for (const QJsonValue &value : nextDestinationsArray) {
+            if (value.isString()) {
+                m_containerNextDestinations.append(value.toString());
+            }
+        }
+    }
+
+    // Initialize containerMovementHistory from JSON array
+    // if available and valid
+    if (json.contains("containerMovementHistory") &&
+        json["containerMovementHistory"].isArray()) {
+        QJsonArray movementHistoryArray =
+            json["containerMovementHistory"].toArray();
+        for (const QJsonValue &value : movementHistoryArray) {
+            if (value.isString()) {
+                m_containerMovementHistory.append(value.toString());
+            }
+        }
+    }
+
     // Initialize packages
-    QJsonArray packagesArray = json["packages"].toArray();
-    for (const QJsonValue &value : packagesArray) {
-        if (value.isObject()) {
-            Package *package = new Package(value.toObject(), this);
-            m_packages.append(package);
+    if (json.contains("packages") && json["packages"].isArray()) {
+        QJsonArray packagesArray = json["packages"].toArray();
+        for (const QJsonValue &value : packagesArray) {
+            if (value.isObject()) {
+                Package *package = new Package(value.toObject(), this);
+                m_packages.append(package);
+            }
         }
     }
 
     // Initialize customVariables
-    QJsonObject customVariablesObject = json["customVariables"].toObject();
-    for (const QString &key : customVariablesObject.keys()) {
-        HaulerType hauler = static_cast<HaulerType>(key.toInt());
-        QJsonObject haulerObject = customVariablesObject[key].toObject();
+    if (json.contains("customVariables") &&
+        json["customVariables"].isObject()) {
+        QJsonObject customVariablesObject = json["customVariables"].toObject();
+        for (const QString &key : customVariablesObject.keys()) {
+            HaulerType hauler = static_cast<HaulerType>(key.toInt());
+            QJsonObject haulerObject = customVariablesObject[key].toObject();
 
-        QVariantMap variables;
-        for (const QString &varKey : haulerObject.keys()) {
-            variables.insert(varKey, haulerObject[varKey].toVariant());
+            QVariantMap variables;
+            for (const QString &varKey : haulerObject.keys()) {
+                variables.insert(varKey, haulerObject[varKey].toVariant());
+            }
+            m_customVariables[hauler] = variables;
         }
-        m_customVariables[hauler] = variables;
     }
 }
 
@@ -144,15 +192,90 @@ QVariantMap Container::getCustomVariablesForHauler(HaulerType hauler) const {
     return m_customVariables.value(hauler);
 }
 
+QString Container::getContainerCurrentLocation() const {
+    return m_containerCurrentLocation;
+}
+
+void Container::setContainerCurrentLocation(const QString &location) {
+    if (location != m_containerCurrentLocation) {
+        m_containerCurrentLocation = location;
+        emit containerCurrentLocationChanged();
+    }
+}
+
+QVector<QString> Container::getContainerNextDestinations() const {
+    return m_containerNextDestinations;
+}
+
+void Container::setContainerNextDestinations(const QVector<QString> &destinations) {
+    if (destinations != m_containerNextDestinations) {
+        m_containerNextDestinations = destinations;
+        emit containerNextDestinationsChanged();
+    }
+}
+
+void Container::addDestination(const QString &destination) {
+    if (!m_containerNextDestinations.contains(destination)) {
+        m_containerNextDestinations.append(destination);
+        emit containerNextDestinationsChanged();
+    }
+}
+
+bool Container::removeDestination(const QString &destination) {
+    int index = m_containerNextDestinations.indexOf(destination);
+    if (index != -1) {
+        m_containerNextDestinations.removeAt(index);
+        emit containerNextDestinationsChanged();
+        return true;
+    }
+    return false;
+}
+
+QVector<QString> Container::getContainerMovementHistory() const {
+    return m_containerMovementHistory;
+}
+
+void Container::setContainerMovementHistory(const QVector<QString> &history) {
+    if (history != m_containerMovementHistory) {
+        m_containerMovementHistory = history;
+        emit containerMovementHistoryChanged();
+    }
+}
+
+void Container::addMovementHistory(const QString &history) {
+    if (!m_containerMovementHistory.contains(history)) {
+        m_containerMovementHistory.append(history);
+        emit containerMovementHistoryChanged();
+    }
+}
+
+bool Container::removeMovementHistory(const QString &history) {
+    int index = m_containerMovementHistory.indexOf(history);
+    if (index != -1) {
+        m_containerMovementHistory.removeAt(index);
+        emit containerMovementHistoryChanged();
+        return true;
+    }
+    return false;
+}
+
 // Helper function to perform deep copy
 void Container::deepCopy(const Container &other)
 {
     m_containerID = other.m_containerID;
     m_containerSize = other.m_containerSize;
+    m_containerCurrentLocation = other.m_containerCurrentLocation;
+    m_containerNextDestinations = other.m_containerNextDestinations;
+    m_containerMovementHistory = other.m_containerMovementHistory;
+
+    // Delete existing packages before copying new ones
+    qDeleteAll(m_packages);
+    m_packages.clear();
     for (Package* package : other.m_packages) {
         Package* packageCopy = new Package(*package);  // Deep copy of each package
         m_packages.append(packageCopy);
     }
+
     m_customVariables = other.m_customVariables; // Deep copy of custom variables
 }
 
@@ -161,6 +284,8 @@ void Container::clear() {
     qDeleteAll(m_packages);
     m_packages.clear();
     m_customVariables.clear();
+    m_containerNextDestinations.clear();
+    m_containerMovementHistory.clear();
 }
 
 QJsonObject Container::toJson() const
@@ -168,6 +293,21 @@ QJsonObject Container::toJson() const
     QJsonObject jsonObject;
     jsonObject["containerID"] = m_containerID;
     jsonObject["containerSize"] = static_cast<int>(m_containerSize);
+    jsonObject["containerCurrentLocation"] = m_containerCurrentLocation;
+
+    // Convert next destinations to QJsonArray
+    QJsonArray nextDestinationsArray;
+    for (const QString &destination : m_containerNextDestinations) {
+        nextDestinationsArray.append(QJsonValue(destination));
+    }
+    jsonObject["containerNextDestinations"] = nextDestinationsArray;
+
+    // Convert movement history to QJsonArray
+    QJsonArray movementHistoryArray;
+    for (const QString &history : m_containerMovementHistory) {
+        movementHistoryArray.append(QJsonValue(history));
+    }
+    jsonObject["containerMovementHistory"] = movementHistoryArray;
 
     // Convert packages to QJsonArray
     QJsonArray packagesArray;
@@ -196,6 +336,9 @@ QJsonObject Container::toJson() const
 QDataStream &operator<<(QDataStream &out, const Container &container) {
     out << container.m_containerID;
     out << static_cast<int>(container.m_containerSize);
+    out << container.m_containerCurrentLocation;
+    out << container.m_containerNextDestinations;
+    out << container.m_containerMovementHistory;
 
     out << container.m_packages.size();
     for (auto package : container.m_packages) {
@@ -215,11 +358,15 @@ QDataStream &operator<<(QDataStream &out, const Container &container) {
 
 // Deserialization
 QDataStream &operator>>(QDataStream &in, Container &container) {
-    QString id;
+    QString id, currentLocation;
+    QVector<QString> nextDestinations, movementHistory;
     int size;
-    in >> id >> size;
+    in >> id >> size >> currentLocation >> nextDestinations >> movementHistory;
     container.setContainerID(id);
     container.setContainerSize(static_cast<Container::ContainerSize>(size));
+    container.setContainerCurrentLocation(currentLocation);
+    container.setContainerNextDestinations(nextDestinations);
+    container.setContainerMovementHistory(movementHistory);
 
     int packageCount;
     in >> packageCount;

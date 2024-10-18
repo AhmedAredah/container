@@ -1,90 +1,93 @@
-cmake_minimum_required(VERSION 3.14)
+# min required cmake version
+cmake_minimum_required(VERSION 3.24)
 
-project(Container VERSION 0.0.1 LANGUAGES CXX)
+# Define the project name (Container) and
+# the programming language used (CXX for C++)
+set(Container_VERSION "0.0.1" CACHE STRING "Project version" FORCE)
+set(Container_NAME "Container" CACHE STRING "Project name" FORCE)
+set(Container_VENDOR "(C) 2022-2023 Virginia Tech Transportation Institute - Center for Sustainable Mobility." CACHE STRING "Project vendor" FORCE)
+# Get the current date and time
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
+# Set the BUILD_DATE variable
+set(BUILD_DATE ${BUILD_DATE} CACHE STRING "Project build time" FORCE)
 
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTORCC ON)
-set(CMAKE_CXX_STANDARD 17)
+# Extract major, minor, and patch version from Container_VERSION
+string(REPLACE "." ";" VERSION_LIST ${Container_VERSION})
+list(GET VERSION_LIST 0 Container_VERSION_MAJOR)
+list(GET VERSION_LIST 1 Container_VERSION_MINOR)
+list(GET VERSION_LIST 2 Container_VERSION_PATCH)
+
+project(${Container_NAME} VERSION ${Container_VERSION} LANGUAGES CXX)
+
+# Set a default build type if none was specified
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+endif()
+
+# Compiler settings
+# Set the C++20 standard to be used for compiling
+set(CMAKE_CXX_STANDARD 23)
+# Ensure that the selected C++ standard is a
+# requirement for the compiler
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
-find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Sql)
-find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Sql)
-
-add_library(Container SHARED
-  src/Container_global.h
-  src/package.h src/package.cpp
-  src/container.h src/container.cpp
-  src/containermap.h src/containermap.cpp
-)
+# Enable Qt's Automatic User Interface Compiler (UIC)
+set(CMAKE_AUTOUIC ON)
+# Enable Qt's Meta-Object Compiler (MOC) which allows
+# the use of Qt features such as signals and slots
+set(CMAKE_AUTOMOC ON)
+# Enable Qt's Resource Compiler (RCC) for compiling
+# resource files into binary format
+set(CMAKE_AUTORCC ON)
 
 
-# Ensure that the library has a 'd' postfix in Debug builds
-set_target_properties(Container PROPERTIES
-  DEBUG_POSTFIX "d"
-  RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
-  RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
-)
+# Platform-specific compiler flags
+if(MSVC)
+    # MSVC-specific flags
+    add_compile_options(/W4 /MP)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(/Od /Zi)
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(/O2)
+    endif()
+else()
+    # GCC/Clang-specific flags
+    add_compile_options(-Wall)
+    if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+        add_compile_options(-O0 -g)
+    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+        add_compile_options(-O3)
+    endif()
+endif()
 
-target_link_libraries(Container PRIVATE
-    Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::Sql
-)
+# Add definitions based on build type
+if (CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_definitions(-DQT_NO_DEBUG_OUTPUT)
+endif()
 
-# Export the include directories for other projects to use
-target_include_directories(Container
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-        $<INSTALL_INTERFACE:include/Container>
-)
+# -------------------------------------------------------
+# ------------------ OPTIONAL PARAMATERS ----------------
+# -------------------------------------------------------
 
-target_compile_definitions(Container PRIVATE CONTAINER_LIBRARY)
+# Add option to choose between building python package or not
+option(BUILD_PYTHON_PACKAGE "Build the Python bindings for the project" ON)
+set(BUILD_PYTHON_PACKAGE ${BUILD_PYTHON_PACKAGE} CACHE BOOL "Build the Python bindings for the project" FORCE)
+# Set the default value for pybind11 hints path
+set(PYBIND11_HINTS_PATH "C:/ProgramData/Anaconda3/envs/containerModeler/Lib/site-packages/pybind11/share/cmake/pybind11" CACHE STRING "Path to pybind11 CMake configuration")
 
 
-# Set the install directories
-install(TARGETS Container
-    EXPORT ContainerTargets
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-    RUNTIME DESTINATION bin
-    INCLUDES DESTINATION include
-)
+# Add option to choose between shared and static libraries
+option(BUILD_SHARED_LIBS "Build libraries as shared (ON) or static (OFF)" ON)
+set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE BOOL "Build libraries as shared (ON) or static (OFF)" FORCE)
 
-install(FILES
-    src/container.h
-    src/package.h
-    src/Container_global.h
-    src/containermap.h
-    DESTINATION include/Container
-)
 
-# Generate and install the CMake configuration files
-include(CMakePackageConfigHelpers)
+# -------------------------------------------------------
+# ---------------- RULES AND SUB PROJECTS ---------------
+# -------------------------------------------------------
 
-# Generate the ConfigVersion.cmake file
-write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake/ContainerConfigVersion.cmake"
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY AnyNewerVersion
-)
+# include src directory
+add_subdirectory(src)
 
-# Create the Config.cmake file
-configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/Config.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake/ContainerConfig.cmake"
-    INSTALL_DESTINATION cmake
-)
-
-# Install the configuration files
-install(FILES
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake/ContainerConfig.cmake"
-    "${CMAKE_CURRENT_BINARY_DIR}/cmake/ContainerConfigVersion.cmake"
-    DESTINATION cmake
-)
-
-# Install the exported targets
-install(EXPORT ContainerTargets
-    FILE ContainerTargets.cmake
-    NAMESPACE Container::
-    DESTINATION cmake
-)
+# Installation rules
+install(TARGETS ${Container_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

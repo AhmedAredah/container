@@ -63,6 +63,14 @@ public:
 
     QJsonObject toJson() const;
 
+    // Get containers by the given next destination
+    QVector<Container*> getContainersByNextDestination(const QString &destination);
+
+    // Dequeues containers by the given next destination
+    QVector<Container*> dequeueContainersByNextDestination(const QString &destination);
+
+
+
     // Serialization and deserialization
     friend QDataStream &operator<<(QDataStream &out, const ContainerMap &containerMap);
     friend QDataStream &operator>>(QDataStream &in, ContainerMap &containerMap);
