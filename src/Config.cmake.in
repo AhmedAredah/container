@@ -1,0 +1,5 @@
+@PACKAGE_INIT@
+
+set(CONTAINER_INCLUDE_DIRS "${PACKAGE_PREFIX_DIR}/include/Container")
+
+include("${CMAKE_CURRENT_LIST_DIR}/ContainerTargets.cmake")
