@@ -49,6 +49,13 @@ set(BINDING_FILES
 # Create a Python binding module
 pybind11_add_module(${PYTHON_LIB_NAME} MODULE ${BINDING_FILES})
 
+target_sources(ContainerPy
+  PRIVATE
+    containerext.h containerext.cpp
+    packageext.h packageext.cpp
+    containermapext.h containermapext.cpp
+)
+
 set_target_properties(${PYTHON_LIB_NAME} PROPERTIES
     AUTOMOC OFF
     AUTOUIC OFF
