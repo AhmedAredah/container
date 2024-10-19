@@ -3,6 +3,8 @@
 
 **Vendor**: (C) 2022-2023 Virginia Tech Transportation Institute - Center for Sustainable Mobility
 
+**Authors**: Ahmed Aredah, Hesham Rakha
+
 The Container project consists of two main subprojects:
 
  - containerlib: A C++ library built using Qt 6.4.3.
@@ -140,4 +142,4 @@ Ensure that the containerpy module is accessible by Python. If you encounter imp
  - Linux: Use .so files and make sure all necessary dependencies are installed.
 
 ## License
-(C) 2022-2023 Virginia Tech Transportation Institute - Center for Sustainable Mobility. All rights reserved.
+(C) 2024-2025 Virginia Tech Transportation Institute - Center for Sustainable Mobility. All rights reserved.
