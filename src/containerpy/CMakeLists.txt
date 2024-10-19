@@ -29,21 +29,16 @@ set(BINDING_FILES
 # Create a Python binding module
 pybind11_add_module(${PYTHON_LIB_NAME} MODULE ${BINDING_FILES})
 
-#target_sources(ContainerPy
-#  PRIVATE
-#    containerext.h
+target_sources(${PYTHON_LIB_NAME}
+PRIVATE
+    containerext.h
 #    containerext.cpp
-#    packageext.h
+    packageext.h
 #    packageext.cpp
-#    containermapext.h
+    containermapext.h
 #    containermapext.cpp
-#)
-
-set_target_properties(${PYTHON_LIB_NAME} PROPERTIES
-    AUTOMOC OFF
-    AUTOUIC OFF
-    AUTORCC OFF
 )
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 # Add the include directory where 'container.h' is located
 target_include_directories(${PYTHON_LIB_NAME} PRIVATE
@@ -132,4 +127,13 @@ add_custom_command(TARGET ${PYTHON_LIB_NAME} POST_BUILD
         ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Xml${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Sql${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
+)
+# Full path to the setup.py script
+set(SETUP_PY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
+
+# Pass the site-packages directory as an environment variable to the setup.py
+add_custom_target(
+    install_python_module ALL
+    COMMAND ${Python_EXECUTABLE} ${SETUP_PY_PATH} install --prefix=${PYTHON_SITE_PACKAGES}
+    COMMENT "Installing Python module using setup.py into ${PYTHON_SITE_PACKAGES}"
 )
