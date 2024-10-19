@@ -44,8 +44,6 @@ public:
     // Add a list of containers to the map
     void addContainers(const QVector<Container*> &containers, double addingTime = std::nan("notDefined"));
 
-    QVector<Container *> getContainersByAddedTime(double referenceTime, const QString &condition);
-
     // Get a container by ID
     Container* getContainer(const QString &id);
 
@@ -53,7 +51,9 @@ public:
     void removeContainer(const QString &id);
 
     // Get the map of containers
-    QMap<QString, Container*> containers() const;
+    QMap<QString, Container*> getAllContainers() const;
+
+    QMap<QString, Container*> getLatestContainers() const;
 
     // Clear the map
     void clear();
@@ -64,6 +64,12 @@ public:
     qsizetype size() const;
 
     QJsonObject toJson() const;
+
+    // Get containers by the given added time and a condition.
+    QVector<Container *> getContainersByAddedTime(double referenceTime, const QString &condition);
+
+    // Dequeues containers by the given added time and a condition.
+    QVector<Container *> dequeueContainersByAddedTime(double referenceTime, const QString &condition);
 
     // Get containers by the given next destination
     QVector<Container*> getContainersByNextDestination(const QString &destination);
@@ -105,6 +111,7 @@ private:
     void saveContainerToDB(const Container &container);
     void removeContainerFromDB(const QString &id);
     void clearDatabase();
+    void loadAdditionalContainerData(Container &container) const;
 };
 }
 

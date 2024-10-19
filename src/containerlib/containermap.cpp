@@ -96,8 +96,8 @@ void ContainerMap::addContainer(const QString &id, Container* container, double 
 
     if (m_useDatabase) {
         container->setContainerAddedTime(addingTime);
-        saveContainerToDB(*container);
         m_cache.insert(id, container, 1);
+        saveContainerToDB(*container);
     } else {
         container->setContainerAddedTime(addingTime);
         m_containers.insert(id, container);
@@ -112,89 +112,6 @@ void ContainerMap::addContainers(const QVector<Container*> &containers, double a
             addContainer(container->getContainerID(), container, addingTime);
         }
     }
-}
-
-QVector<Container *> ContainerMap::getContainersByAddedTime(double referenceTime, const QString &condition)
-{
-    QMutexLocker locker(&m_mutex); // Ensure thread safety
-    QVector<Container*> result;
-
-    QString normalizedCondition = condition.trimmed().toLower(); // Convert to lowercase and trim
-
-    // Check for valid conditions
-    if (normalizedCondition != ">" && normalizedCondition != ">=" &&
-        normalizedCondition != "<" && normalizedCondition != "<=" &&
-        normalizedCondition != "=" && normalizedCondition != "!=") {
-        qDebug() << "Invalid condition: must be one of '>', '>=', '<', '<=', '=', or '!='.";
-        return result;
-    }
-
-    if (m_useDatabase) {
-        // If using a database, query based on addedTime
-        QSqlQuery query;
-        QString queryString;
-
-        // Prepare query string based on condition
-        if (normalizedCondition == ">") {
-            queryString = "SELECT id FROM Containers WHERE addedTime > :referenceTime";
-        } else if (normalizedCondition == ">=") {
-            queryString = "SELECT id FROM Containers WHERE addedTime >= :referenceTime";
-        } else if (normalizedCondition == "<") {
-            queryString = "SELECT id FROM Containers WHERE addedTime < :referenceTime";
-        } else if (normalizedCondition == "<=") {
-            queryString = "SELECT id FROM Containers WHERE addedTime <= :referenceTime";
-        } else if (normalizedCondition == "=") {
-            queryString = "SELECT id FROM Containers WHERE addedTime = :referenceTime";
-        } else if (normalizedCondition == "!=") {
-            queryString = "SELECT id FROM Containers WHERE addedTime != :referenceTime";
-        }
-
-        query.prepare(queryString);
-        query.bindValue(":referenceTime", referenceTime);
-
-        if (query.exec()) {
-            while (query.next()) {
-                QString containerId = query.value(0).toString();
-                Container* container = getContainer(containerId);
-                if (container) {
-                    result.append(container);
-                }
-            }
-        } else {
-            emit databaseErrorOccurred("Failed to query containers by added time.");
-            qDebug() << "Failed to query containers by added time:" << query.lastError().text();
-        }
-    } else {
-        // If not using a database, filter in-memory containers
-        for (auto it = m_containers.begin(); it != m_containers.end(); ++it) {
-            Container* container = it.value();
-            if (container) {
-                double addedTime = container->getContainerAddedTime();
-                bool conditionMet = false;
-
-                // Perform the comparison based on the condition
-                if (normalizedCondition == ">" && addedTime > referenceTime) {
-                    conditionMet = true;
-                } else if (normalizedCondition == ">=" && addedTime >= referenceTime) {
-                    conditionMet = true;
-                } else if (normalizedCondition == "<" && addedTime < referenceTime) {
-                    conditionMet = true;
-                } else if (normalizedCondition == "<=" && addedTime <= referenceTime) {
-                    conditionMet = true;
-                } else if (normalizedCondition == "=" && addedTime == referenceTime) {
-                    conditionMet = true;
-                } else if (normalizedCondition == "!=" && addedTime != referenceTime) {
-                    conditionMet = true;
-                }
-
-                if (conditionMet) {
-                    result.append(container);
-                }
-            }
-        }
-    }
-
-    return result;
 }
 
 Container* ContainerMap::getContainer(const QString &id)
@@ -224,7 +141,98 @@ void ContainerMap::removeContainer(const QString &id)
     emit containersChanged();
 }
 
-QMap<QString, Container*> ContainerMap::containers() const
+QMap<QString, Container*> ContainerMap::getAllContainers() const
+{
+    QMutexLocker locker(&m_mutex);
+    QMap<QString, Container*> result;
+
+    if (m_useDatabase) {
+        // Query the database to retrieve all containers
+        QSqlQuery query("SELECT id, size, currentLocation, addedTime FROM Containers");
+        while (query.next()) {
+            QString id = query.value("id").toString();
+            int size = query.value("size").toInt();
+            QString currentLocation = query.value("currentLocation").toString();
+            double addedTime;
+            if (query.value("addedTime").isNull()) {
+                addedTime = std::nan(""); // Set to NaN if the database value is NULL
+            } else {
+                addedTime = query.value("addedTime").toDouble();
+            }
+
+            // Create a new Container object from the retrieved data
+            Container *container = new Container();
+            container->setContainerID(id);
+            container->setContainerSize(static_cast<ContainerCore::Container::ContainerSize>(size));
+            container->setContainerCurrentLocation(currentLocation);
+            container->setContainerAddedTime(addedTime);
+
+            // Retrieve related data (e.g., packages, custom variables, destinations, etc.)
+            loadAdditionalContainerData(*container);
+
+            // Insert the container into the result map
+            result.insert(id, container);
+        }
+    } else {
+        // Use the in-memory map if the database is not being used
+        result = m_containers;
+    }
+
+    return result;
+}
+
+void ContainerMap::loadAdditionalContainerData(Container &container) const
+{
+    // Load packages
+    QSqlQuery packageQuery;
+    packageQuery.prepare("SELECT id FROM Packages WHERE container_id = :container_id");
+    packageQuery.bindValue(":container_id", container.getContainerID());
+    packageQuery.exec();
+
+    while (packageQuery.next()) {
+        QString packageID = packageQuery.value("id").toString();
+        // Assume you have a way to create or retrieve the package by ID
+        Package *package = new Package(packageID);
+        container.addPackage(package);
+    }
+
+    // Load custom variables
+    QSqlQuery customVarQuery;
+    customVarQuery.prepare("SELECT hauler_type, key, value FROM CustomVariables WHERE container_id = :container_id");
+    customVarQuery.bindValue(":container_id", container.getContainerID());
+    customVarQuery.exec();
+
+    while (customVarQuery.next()) {
+        int haulerType = customVarQuery.value("hauler_type").toInt();
+        QString key = customVarQuery.value("key").toString();
+        QVariant value = customVarQuery.value("value");
+        container.addCustomVariable(static_cast<Container::HaulerType>(haulerType), key, value);
+    }
+
+    // Load next destinations
+    QSqlQuery nextDestQuery;
+    nextDestQuery.prepare("SELECT destination FROM NextDestinations WHERE container_id = :container_id");
+    nextDestQuery.bindValue(":container_id", container.getContainerID());
+    nextDestQuery.exec();
+
+    while (nextDestQuery.next()) {
+        QString destination = nextDestQuery.value("destination").toString();
+        container.addDestination(destination);
+    }
+
+    // Load movement history
+    QSqlQuery movementHistoryQuery;
+    movementHistoryQuery.prepare("SELECT history FROM MovementHistory WHERE container_id = :container_id");
+    movementHistoryQuery.bindValue(":container_id", container.getContainerID());
+    movementHistoryQuery.exec();
+
+    while (movementHistoryQuery.next()) {
+        QString history = movementHistoryQuery.value("history").toString();
+        container.addMovementHistory(history);
+    }
+}
+
+QMap<QString, Container *> ContainerMap::getLatestContainers() const
 {
     QMutexLocker locker(&m_mutex);
 
@@ -343,6 +351,182 @@ QJsonObject ContainerMap::toJson() const
     return jsonObject;
 }
 
+QVector<Container *> ContainerMap::getContainersByAddedTime(double referenceTime, const QString &condition)
+{
+    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    QVector<Container*> result;
+
+    QString normalizedCondition = condition.trimmed().toLower(); // Convert to lowercase and trim
+
+    // Check for valid conditions
+    if (normalizedCondition != ">" && normalizedCondition != ">=" &&
+        normalizedCondition != "<" && normalizedCondition != "<=" &&
+        normalizedCondition != "=" && normalizedCondition != "!=") {
+        qDebug() << "Invalid condition: must be one of '>', '>=', '<', '<=', '=', or '!='.";
+        return result;
+    }
+
+    if (m_useDatabase) {
+        // If using a database, query based on addedTime
+        QSqlQuery query;
+        QString queryString;
+
+        // Prepare query string based on condition
+        if (normalizedCondition == ">") {
+            queryString = "SELECT id FROM Containers WHERE addedTime > :referenceTime";
+        } else if (normalizedCondition == ">=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime >= :referenceTime";
+        } else if (normalizedCondition == "<") {
+            queryString = "SELECT id FROM Containers WHERE addedTime < :referenceTime";
+        } else if (normalizedCondition == "<=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime <= :referenceTime";
+        } else if (normalizedCondition == "=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime = :referenceTime";
+        } else if (normalizedCondition == "!=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime != :referenceTime";
+        }
+
+        query.prepare(queryString);
+        query.bindValue(":referenceTime", referenceTime);
+
+        if (query.exec()) {
+            while (query.next()) {
+                QString containerId = query.value(0).toString();
+                Container* container = getContainer(containerId);
+                if (container) {
+                    result.append(container);
+                }
+            }
+        } else {
+            emit databaseErrorOccurred("Failed to query containers by added time.");
+            qDebug() << "Failed to query containers by added time:" << query.lastError().text();
+        }
+    } else {
+        // If not using a database, filter in-memory containers
+        for (auto it = m_containers.begin(); it != m_containers.end(); ++it) {
+            Container* container = it.value();
+            if (container) {
+                double addedTime = container->getContainerAddedTime();
+                bool conditionMet = false;
+
+                // Perform the comparison based on the condition
+                if (normalizedCondition == ">" && addedTime > referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == ">=" && addedTime >= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<" && addedTime < referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<=" && addedTime <= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "=" && addedTime == referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "!=" && addedTime != referenceTime) {
+                    conditionMet = true;
+                }
+
+                if (conditionMet) {
+                    result.append(container);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
+QVector<Container *> ContainerMap::dequeueContainersByAddedTime(double referenceTime, const QString &condition)
+{
+    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    QVector<Container*> matchingContainers;
+
+    QString normalizedCondition = condition.trimmed().toLower(); // Convert to lowercase and trim
+
+    // Check for valid conditions
+    if (normalizedCondition != ">" && normalizedCondition != ">=" &&
+        normalizedCondition != "<" && normalizedCondition != "<=" &&
+        normalizedCondition != "=" && normalizedCondition != "!=") {
+        qDebug() << "Invalid condition: must be one of '>', '>=', '<', '<=', '=', or '!='.";
+        return matchingContainers;
+    }
+
+    if (m_useDatabase) {
+        // Retrieve containers from the database based on addedTime
+        QSqlQuery query;
+        QString queryString;
+
+        // Prepare query string based on condition
+        if (normalizedCondition == ">") {
+            queryString = "SELECT id FROM Containers WHERE addedTime > :referenceTime";
+        } else if (normalizedCondition == ">=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime >= :referenceTime";
+        } else if (normalizedCondition == "<") {
+            queryString = "SELECT id FROM Containers WHERE addedTime < :referenceTime";
+        } else if (normalizedCondition == "<=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime <= :referenceTime";
+        } else if (normalizedCondition == "=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime = :referenceTime";
+        } else if (normalizedCondition == "!=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime != :referenceTime";
+        }
+
+        query.prepare(queryString);
+        query.bindValue(":referenceTime", referenceTime);
+
+        if (query.exec()) {
+            while (query.next()) {
+                QString containerID = query.value(0).toString();
+                Container* container = getContainer(containerID);
+                if (container) {
+                    matchingContainers.append(container);
+                    // Remove the container from the database and cache
+                    removeContainer(containerID);
+                }
+            }
+        } else {
+            emit databaseErrorOccurred("Failed to dequeue containers by added time.");
+            qDebug() << "Failed to dequeue containers by added time:" << query.lastError().text();
+        }
+    } else {
+        // Retrieve containers from the in-memory map based on addedTime
+        for (auto it = m_containers.begin(); it != m_containers.end();) {
+            Container* container = it.value();
+            if (container) {
+                double addedTime = container->getContainerAddedTime();
+                bool conditionMet = false;
+
+                // Perform the comparison based on the condition
+                if (normalizedCondition == ">" && addedTime > referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == ">=" && addedTime >= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<" && addedTime < referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<=" && addedTime <= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "=" && addedTime == referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "!=" && addedTime != referenceTime) {
+                    conditionMet = true;
+                }
+
+                if (conditionMet) {
+                    matchingContainers.append(container);
+                    delete it.value(); // Ensure memory is cleaned
+                    it = m_containers.erase(it);
+                } else {
+                    ++it;
+                }
+            } else {
+                ++it;
+            }
+        }
+    }
+
+    emit containersChanged();
+    return matchingContainers;
+}
+
+
 QVector<Container *> ContainerMap::
     getContainersByNextDestination(const QString &destination)
 {
@@ -432,8 +616,8 @@ QVector<Container *> ContainerMap::dequeueContainersByNextDestination(const QStr
 
 void ContainerMap::deepCopy(const ContainerMap &other)
 {
-    QMutexLocker locker(&m_mutex); // Ensure thread safety for this object
-    QMutexLocker otherLocker(&other.m_mutex); // Ensure thread safety for the source object
+//    QMutexLocker locker(&m_mutex); // Ensure thread safety for this object
+//    QMutexLocker otherLocker(&other.m_mutex); // Ensure thread safety for the source object
 
 
     m_useDatabase = other.m_useDatabase;
@@ -592,7 +776,7 @@ void ContainerMap::createTables()
 // Helper function to load container from database
 void ContainerMap::loadContainerFromDB(const QString &id)
 {
-    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    // QMutexLocker locker(&m_mutex); // Ensure thread safety
 
     QSqlQuery query;
     query.prepare("SELECT size, currentLocation, addedTime FROM Containers "
@@ -710,7 +894,7 @@ void ContainerMap::loadContainerFromDB(const QString &id)
 // Helper function to save container to database
 void ContainerMap::saveContainerToDB(const Container &container)
 {
-    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    // QMutexLocker locker(&m_mutex); // Ensure thread safety
 
 
     QSqlDatabase::database().transaction(); // Start transaction
@@ -818,7 +1002,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
 // Helper function to remove container from database
 void ContainerMap::removeContainerFromDB(const QString &id)
 {
-    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    // QMutexLocker locker(&m_mutex); // Ensure thread safety
 
     QSqlQuery query;
     query.prepare("DELETE FROM Containers WHERE id = :id");
