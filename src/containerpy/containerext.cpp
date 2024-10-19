@@ -1,4 +1,5 @@
 #include "containerext.h"
+#include "container.h"
 #include "package.h"
 #include "packageext.h"
 
@@ -175,4 +176,9 @@ void ContainerExt::addMovementHistoryStd(const std::string &history) {
 
 bool ContainerExt::removeMovementHistoryStd(const std::string &history) {
     return mContainer->removeMovementHistory(QString::fromStdString(history));
+}
+
+ContainerCore::Container *ContainerExt::getBaseContainer()
+{
+    return mContainer;
 }
