@@ -12,6 +12,8 @@ public:
     // Constructor that creates a copy of the given Package
     PackageExt(const ContainerCore::Package &pkg);
 
+    PackageExt(ContainerCore::Package *pkg);
+
     // Copy constructor
     PackageExt(const PackageExt &other);
 

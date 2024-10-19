@@ -7,13 +7,15 @@
 class ContainerMapExt
 {
 public:
-    explicit ContainerMapExt(QObject *parent = nullptr);
+    explicit ContainerMapExt();
 
     ContainerMapExt(const std::string &dbLocation);
 
-    void addContainer(const std::string &id, ContainerExt* container);
+    void addContainer(const std::string &id, ContainerExt* container, double addingTime);
 
-    void addContainers(const std::vector<ContainerExt*> &containers);
+    void addContainers(const std::vector<ContainerExt*> &containers, double addingTime);
+
+    std::vector<ContainerExt*> getContainersByAddedTime(double referenceTime, const std::string &condition);
 
     ContainerExt* getContainer(const std::string &id);
 
@@ -32,6 +34,8 @@ private:
 
     // Helper method to safely cast ContainerCore::Container* to ContainerExt*
     ContainerExt* toContainerExt(ContainerCore::Container* base) const;
+
+    std::vector<ContainerExt*> convertQVecContainerToSTDVecContainerExt(QVector<ContainerCore::Container*> original);
 };
 
 #endif // CONTAINERMAPEXT_H

@@ -10,6 +10,11 @@ PackageExt::PackageExt(const ContainerCore::Package &pkg)
     : mPackage(new ContainerCore::Package(pkg))
 {}
 
+PackageExt::PackageExt(ContainerCore::Package *pkg)
+{
+    mPackage = pkg;
+}
+
 // Copy constructor to handle deep copy
 PackageExt::PackageExt(const PackageExt &other)
     : mPackage(new ContainerCore::Package(*other.mPackage))

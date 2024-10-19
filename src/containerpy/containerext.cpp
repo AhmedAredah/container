@@ -17,6 +17,11 @@ ContainerExt::ContainerExt(const ContainerExt &other)
     mContainer = new ContainerCore::Container(*other.mContainer);
 }
 
+ContainerExt::ContainerExt(ContainerCore::Container *other)
+{
+    mContainer = other;
+}
+
 ContainerExt& ContainerExt::operator=(const ContainerExt &other) {
     if (this != &other) {
         cleanup();

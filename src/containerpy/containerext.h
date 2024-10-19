@@ -34,6 +34,7 @@ public:
 
     // Copy Constructor and Assignment Operator
     ContainerExt(const ContainerExt &other);
+    ContainerExt(ContainerCore::Container *other);
     ContainerExt& operator=(const ContainerExt &other);
 
     std::string getContainerID() const;
