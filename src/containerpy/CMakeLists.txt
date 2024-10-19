@@ -113,6 +113,9 @@ endif()
 
 message(STATUS "Qt bin directory: ${QT_BIN_DIR}")
 
+# Full path to the setup.py script
+set(SETUP_PY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
+
 # Copy the .pyd and .dll files to the Python environment's site-packages directory
 add_custom_command(TARGET ${PYTHON_LIB_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
@@ -127,9 +130,9 @@ add_custom_command(TARGET ${PYTHON_LIB_NAME} POST_BUILD
         ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Xml${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Sql${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        ${CMAKE_CURRENT_SOURCE_DIR}/ContainerPy.pyi ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
 )
-# Full path to the setup.py script
-set(SETUP_PY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
 
 # Pass the site-packages directory as an environment variable to the setup.py
 add_custom_target(
