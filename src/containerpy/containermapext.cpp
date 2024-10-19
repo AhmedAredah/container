@@ -8,10 +8,10 @@ ContainerMapExt::ContainerMapExt(const std::string &dbLocation)
     : mContainerMap(QString::fromStdString(dbLocation))
 {}
 
-void ContainerMapExt::addContainer(const std::string &id, ContainerExt *container, double addingTime)
+void ContainerMapExt::addContainer(ContainerExt *container, double addingTime)
 {
     if (container) {
-        mContainerMap.addContainer(QString::fromStdString(id), container->getBaseContainer(), addingTime);
+        mContainerMap.addContainer(QString::fromStdString(container->getContainerID()), container->getBaseContainer(), addingTime);
     }
 }
 
@@ -30,6 +30,13 @@ std::vector<ContainerExt*> ContainerMapExt::getContainersByAddedTime(double refe
     return convertQVecContainerToSTDVecContainerExt(results);
 }
 
+std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByAddedTime(double referenceTime, const std::string &condition)
+{
+    auto results = mContainerMap.dequeueContainersByAddedTime(referenceTime, QString::fromStdString(condition));
+
+    return convertQVecContainerToSTDVecContainerExt(results);
+}
+
 ContainerExt* ContainerMapExt::getContainer(const std::string &id)
 {
     ContainerCore::Container* baseContainer = mContainerMap.getContainer(QString::fromStdString(id));
@@ -41,20 +48,17 @@ void ContainerMapExt::removeContainer(const std::string &id)
     mContainerMap.removeContainer(QString::fromStdString(id));
 }
 
-std::map<std::string, ContainerExt *> ContainerMapExt::containers() const
+std::vector<ContainerExt *> ContainerMapExt::getAllContainers()
 {
-    std::map<std::string, ContainerExt*> stdMap;
-    QMap<QString, ContainerCore::Container*> qtMap = mContainerMap.containers();
+    QMap<QString, ContainerCore::Container*> qtMap = mContainerMap.getAllContainers();
+    auto qtMapVec = qtMap.values();
+    return convertQVecContainerToSTDVecContainerExt(qtMapVec);
+}
 
-    for (auto it = qtMap.begin(); it != qtMap.end(); ++it) {
-        std::string key = it.key().toStdString();
-        ContainerExt* value = toContainerExt(it.value());
-
-        if (value) {
-            stdMap[key] = value;
-        }
-    }
-    return stdMap;
+std::vector<ContainerExt *> ContainerMapExt::getLatestContainers() {
+    QMap<QString, ContainerCore::Container*> qtMap = mContainerMap.getLatestContainers();
+    auto qtMapVec = qtMap.values();
+    return convertQVecContainerToSTDVecContainerExt(qtMapVec);
 }
 
 int ContainerMapExt::size() const
@@ -68,7 +72,6 @@ std::vector<ContainerExt*> ContainerMapExt::getContainersByNextDestination(const
 
     return convertQVecContainerToSTDVecContainerExt(results);
 }
-
 
 std::vector<ContainerExt*> ContainerMapExt::dequeueContainerByNextDestination(const std::string &destination)
 {
@@ -94,4 +97,18 @@ std::vector<ContainerExt*> ContainerMapExt::convertQVecContainerToSTDVecContaine
     }
 
     return output;
+}
+
+std::map<std::string, ContainerExt *> ContainerMapExt::convertQMapToSTDMapContainerExt(QMap<QString, ContainerCore::Container*> original) {
+    std::map<std::string, ContainerExt*> stdMap;
+
+    for (auto it = original.begin(); it != original.end(); ++it) {
+        std::string key = it.key().toStdString();
+        ContainerExt* value = toContainerExt(it.value());
+
+        if (value) {
+            stdMap[key] = value;
+        }
+    }
+    return stdMap;
 }

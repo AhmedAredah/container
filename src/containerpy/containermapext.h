@@ -11,19 +11,23 @@ public:
 
     ContainerMapExt(const std::string &dbLocation);
 
-    void addContainer(const std::string &id, ContainerExt* container, double addingTime);
+    void addContainer(ContainerExt* container, double addingTime);
 
     void addContainers(const std::vector<ContainerExt*> &containers, double addingTime);
-
-    std::vector<ContainerExt*> getContainersByAddedTime(double referenceTime, const std::string &condition);
 
     ContainerExt* getContainer(const std::string &id);
 
     void removeContainer(const std::string &id);
 
-    std::map<std::string, ContainerExt*> containers() const;
+    std::vector<ContainerExt *> getAllContainers();
+
+    std::vector<ContainerExt *> getLatestContainers();
 
     int size() const;
+
+    std::vector<ContainerExt*> getContainersByAddedTime(double referenceTime, const std::string &condition);
+
+    std::vector<ContainerExt*> dequeueContainersByAddedTime(double referenceTime, const std::string &condition);
 
     std::vector<ContainerExt*> getContainersByNextDestination(const std::string &destination);
 
@@ -36,6 +40,7 @@ private:
     ContainerExt* toContainerExt(ContainerCore::Container* base) const;
 
     std::vector<ContainerExt*> convertQVecContainerToSTDVecContainerExt(QVector<ContainerCore::Container*> original);
+    std::map<std::string, ContainerExt *> convertQMapToSTDMapContainerExt(QMap<QString, ContainerCore::Container*> original);
 };
 
 #endif // CONTAINERMAPEXT_H

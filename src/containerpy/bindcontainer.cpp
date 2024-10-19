@@ -105,9 +105,9 @@ PYBIND11_MODULE(ContainerPy, m) {
             [](ContainerMapExt &self, const std::string &id, ContainerExt* container, double addingTime) {
                 // Check if addingTime is NaN and pass it to the C++ function accordingly
                 if (std::isnan(addingTime)) {
-                    self.addContainer(id, container, std::nan(""));
+                    self.addContainer(container, std::nan(""));
                 } else {
-                    self.addContainer(id, container, addingTime);
+                    self.addContainer(container, addingTime);
                 }
             }, py::arg("id"), py::arg("container"), py::arg("addingTime") = std::nan(""))
         .def("add_containers",
@@ -119,12 +119,16 @@ PYBIND11_MODULE(ContainerPy, m) {
                     self.addContainers(containers, addingTime);
                 }
             }, py::arg("containers"), py::arg("addingTime") = std::nan(""))
+
+        .def("remove_container", &ContainerMapExt::removeContainer)
+        .def("get_all_containers", &ContainerMapExt::getAllContainers)
+        .def("get_latest_containers", &ContainerMapExt::getLatestContainers)
+        .def("size", &ContainerMapExt::size)
         .def("get_containers_by_added_time",
              &ContainerMapExt::getContainersByAddedTime,
              py::arg("referenceTime"), py::arg("condition"))
-        .def("remove_container", &ContainerMapExt::removeContainer)
-        .def("get_containers", &ContainerMapExt::containers)
-        .def("size", &ContainerMapExt::size)
+        .def("dequeue_containers_by_added_time", &ContainerMapExt::dequeueContainersByAddedTime,
+             py::arg("referenceTime"), py::arg("condition"))
         .def("get_containers_by_next_destination", &ContainerMapExt::getContainersByNextDestination)
         .def("dequeue_containers_by_next_destination", &ContainerMapExt::dequeueContainerByNextDestination);
 
