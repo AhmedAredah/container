@@ -4,7 +4,7 @@
 #include "containerext.h"
 #include "containermap.h"
 
-class ContainerMapExt : public ContainerCore::ContainerMap
+class ContainerMapExt
 {
 public:
     explicit ContainerMapExt(QObject *parent = nullptr);
@@ -21,11 +21,17 @@ public:
 
     std::map<std::string, ContainerExt*> containers() const;
 
+    int size() const;
+
     std::vector<ContainerExt*> getContainersByNextDestination(const std::string &destination);
 
     std::vector<ContainerExt*> dequeueContainerByNextDestination(const std::string &destination);
 
+private:
+    ContainerCore::ContainerMap mContainerMap;
 
+    // Helper method to safely cast ContainerCore::Container* to ContainerExt*
+    ContainerExt* toContainerExt(ContainerCore::Container* base) const;
 };
 
 #endif // CONTAINERMAPEXT_H

@@ -1,83 +1,95 @@
 #include "containermapext.h"
 
 ContainerMapExt::ContainerMapExt(QObject *parent)
-    : ContainerCore::ContainerMap{parent}
+    : mContainerMap{parent}
 {}
 
 ContainerMapExt::ContainerMapExt(const std::string &dbLocation)
-    : ContainerMap(QString::fromStdString(dbLocation))
+    : mContainerMap(QString::fromStdString(dbLocation))
 {}
 
 void ContainerMapExt::addContainer(const std::string &id, ContainerExt *container)
 {
-    ContainerCore::ContainerMap::addContainer(QString::fromStdString(id), container);
+    if (container) {
+        mContainerMap.addContainer(QString::fromStdString(id), container->getBaseContainer());
+    }
 }
 
 void ContainerMapExt::addContainers(const std::vector<ContainerExt *> &containers)
 {
     for (auto& c : containers) {
-        addContainer(c->getContainerID().toStdString(), c);
+        if (c) {
+            mContainerMap.addContainer(QString::fromStdString(c->getContainerID()), c->getBaseContainer());
+        }
     }
 }
 
-ContainerExt *ContainerMapExt::getContainer(const std::string &id)
+ContainerExt* ContainerMapExt::getContainer(const std::string &id)
 {
-    return static_cast<ContainerExt *>(
-        ContainerCore::ContainerMap::getContainer(QString::fromStdString(id)));
+    ContainerCore::Container* baseContainer = mContainerMap.getContainer(QString::fromStdString(id));
+    return toContainerExt(baseContainer);
 }
 
 void ContainerMapExt::removeContainer(const std::string &id)
 {
-    ContainerCore::ContainerMap::removeContainer(QString::fromStdString(id));
+    mContainerMap.removeContainer(QString::fromStdString(id));
 }
 
 std::map<std::string, ContainerExt *> ContainerMapExt::containers() const
 {
     std::map<std::string, ContainerExt*> stdMap;
-    QMap<QString, ContainerCore::Container*> qtMap =
-        ContainerCore::ContainerMap::containers();  // Call the original function
-    for (auto it = qtMap.begin(); it != qtMap.end(); ++it) {
-        // Convert QString to std::string
-        std::string key = it.key().toStdString();
+    QMap<QString, ContainerCore::Container*> qtMap = mContainerMap.containers();
 
-        // Safely attempt to cast to ContainerExt*
-        ContainerExt* value = dynamic_cast<ContainerExt*>(it.value());
+    for (auto it = qtMap.begin(); it != qtMap.end(); ++it) {
+        std::string key = it.key().toStdString();
+        ContainerExt* value = toContainerExt(it.value());
+
         if (value) {
-            stdMap[key] = value;  // Only add to map if cast is successful
+            stdMap[key] = value;
         }
     }
     return stdMap;
 }
 
-std::vector<ContainerExt *> ContainerMapExt::
-    getContainersByNextDestination(const std::string &destination)
+int ContainerMapExt::size() const
 {
-    auto results =
-        ContainerCore::ContainerMap::
-        getContainersByNextDestination(QString::fromStdString(destination));
+    return mContainerMap.size();
+}
 
-    std::vector<ContainerExt *> output;
+std::vector<ContainerExt*> ContainerMapExt::getContainersByNextDestination(const std::string &destination)
+{
+    auto results = mContainerMap.getContainersByNextDestination(QString::fromStdString(destination));
+    std::vector<ContainerExt*> output;
+
     for (auto& r : results) {
-        ContainerExt* value = static_cast<ContainerExt*>(r);
-        output.push_back(value);
+        ContainerExt* value = toContainerExt(r);
+        if (value) {
+            output.push_back(value);
+        }
     }
 
     return output;
 }
 
 
-std::vector<ContainerExt *> ContainerMapExt::
-    dequeueContainerByNextDestination(const std::string &destination)
+std::vector<ContainerExt*> ContainerMapExt::dequeueContainerByNextDestination(const std::string &destination)
 {
-    auto results =
-        ContainerCore::ContainerMap::
-        dequeueContainersByNextDestination(QString::fromStdString(destination));
+    auto results = mContainerMap.dequeueContainersByNextDestination(QString::fromStdString(destination));
+    std::vector<ContainerExt*> output;
 
-    std::vector<ContainerExt *> output;
     for (auto& r : results) {
-        ContainerExt* value = static_cast<ContainerExt*>(r);
-        output.push_back(value);
+        ContainerExt* value = toContainerExt(r);
+        if (value) {
+            output.push_back(value);
+        }
     }
 
     return output;
+}
+
+// Helper method to safely cast ContainerCore::Container* to ContainerExt*
+ContainerExt* ContainerMapExt::toContainerExt(ContainerCore::Container* base) const
+{
+    // Use dynamic_cast for safety in case of polymorphism
+    return dynamic_cast<ContainerExt*>(base);
 }

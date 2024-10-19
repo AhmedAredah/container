@@ -21,17 +21,23 @@ find_package(pybind11 REQUIRED CONFIG HINTS ${PYBIND11_HINTS_PATH})
 
 set(BINDING_FILES
     bindcontainer.cpp
+    containerext.cpp
+    packageext.cpp
+    containermapext.cpp
 )
 
 # Create a Python binding module
 pybind11_add_module(${PYTHON_LIB_NAME} MODULE ${BINDING_FILES})
 
-target_sources(ContainerPy
-  PRIVATE
-    containerext.h containerext.cpp
-    packageext.h packageext.cpp
-    containermapext.h containermapext.cpp
-)
+#target_sources(ContainerPy
+#  PRIVATE
+#    containerext.h
+#    containerext.cpp
+#    packageext.h
+#    packageext.cpp
+#    containermapext.h
+#    containermapext.cpp
+#)
 
 set_target_properties(${PYTHON_LIB_NAME} PROPERTIES
     AUTOMOC OFF

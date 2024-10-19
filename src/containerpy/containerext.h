@@ -4,20 +4,44 @@
 #include <container.h>
 #include "packageext.h"
 
-class ContainerExt : public ContainerCore::Container
+class ContainerExt
 {
 public:
-    explicit ContainerExt(QObject *parent = nullptr);
-    ContainerExt(const std::string &id, ContainerSize size);
+    enum ContainerSize {
+        twentyFT,
+        twentyFT_HighCube,
+        fourtyFT,
+        fourtyFT_HighCube,
+        fortyFiveFT,
+        fortyFiveFT_HighCube,
+        tenFT,
+        thirtyFT,
+        fortyEightFT,
+        fiftyThreeFT,
+        sixtyFT
+    };
 
-    std::string getContainerIDStd() const;
+    enum HaulerType {
+        truck,
+        train,
+        waterTransport,
+        airTransport
+    };
+
+    // Constructor and Destructor
+    ContainerExt(const std::string &id, ContainerSize size);
+    ~ContainerExt();
+
+    // Copy Constructor and Assignment Operator
+    ContainerExt(const ContainerExt &other);
+    ContainerExt& operator=(const ContainerExt &other);
+
+    std::string getContainerID() const;
     void setContainerIDStd(const std::string &id);
 
-    // Getter and Setter for containerSize
     ContainerSize getContainerSize() const;
     void setContainerSize(ContainerSize size);
 
-    // Getter and Setter for packages
     std::vector<PackageExt*> getPackages() const;
     void setPackages(const std::vector<PackageExt*> &packages);
     void addPackage(PackageExt *package);
@@ -40,6 +64,14 @@ public:
     void setContainerMovementHistoryStd(const std::vector<std::string> &history);
     void addMovementHistoryStd(const std::string &history);
     bool removeMovementHistoryStd(const std::string &history);
+
+    ContainerCore::Container *getBaseContainer();
+
+private:
+    ContainerCore::Container *mContainer;
+
+    // Helper method to clean up mContainer
+    void cleanup();
 };
 
 #endif // CONTAINEREXT_H
