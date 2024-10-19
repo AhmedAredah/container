@@ -109,6 +109,23 @@ if(BUILD_PYTHON_PACKAGE)
         message(FATAL_ERROR "pybind11 is not installed or could not be found. Error: ${PYBIND11_ERROR}")
     endif()
 
+    # Attempt to find if setuptools is installed using the Python executable
+    execute_process(
+        COMMAND ${Python_EXECUTABLE} -c "import setuptools; print(setuptools.__version__)"
+        OUTPUT_VARIABLE SETUPTOOLS_VERSION
+        ERROR_VARIABLE SETUPTOOLS_ERROR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Check if the command succeeded (i.e., setuptools is installed)
+    if (SETUPTOOLS_VERSION)
+        # Cache the setuptools version for later use
+        set(SETUPTOOLS_INSTALLED TRUE CACHE BOOL "Indicates if setuptools is installed")
+        message(STATUS "setuptools is installed. Version: ${SETUPTOOLS_VERSION}")
+    else()
+        message(FATAL_ERROR "setuptools is not installed or could not be found. Error: ${SETUPTOOLS_ERROR}")
+    endif()
+
 endif()
 
 # -------------------------------------------------------
