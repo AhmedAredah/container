@@ -82,15 +82,15 @@ if(BUILD_PYTHON_PACKAGE)
     # Allow the user to override this value with -DPYTHON_EXECUTABLE=<path>
     set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/containerModeler/python.exe" CACHE PATH "Path to the Python executable")
 
-    # Make sure the user provides or confirms the Python path
-    if(NOT EXISTS ${PYTHON_EXECUTABLE})
-        message(FATAL_ERROR "The specified Python executable does not exist: ${PYTHON_EXECUTABLE}")
-    else()
-        message(STATUS "Using Python from: ${PYTHON_EXECUTABLE}")
-    endif()
-
     # Set Python_EXECUTABLE variable to override the default one found by CMake
     set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+
+    # Make sure the user provides or confirms the Python path
+    if(NOT EXISTS ${Python_EXECUTABLE})
+        message(FATAL_ERROR "The specified Python executable does not exist: ${Python_EXECUTABLE}")
+    else()
+        message(STATUS "Using Python from: ${Python_EXECUTABLE}")
+    endif()
 
     # Attempt to find the pybind11 CMake directory using the Python executable
     execute_process(
