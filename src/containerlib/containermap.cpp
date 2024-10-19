@@ -90,26 +90,111 @@ ContainerMap& ContainerMap::operator=(const ContainerMap &other)
     return *this;
 }
 
-void ContainerMap::addContainer(const QString &id, Container* container)
+void ContainerMap::addContainer(const QString &id, Container* container, double addingTime)
 {
     QMutexLocker locker(&m_mutex);
 
     if (m_useDatabase) {
+        container->setContainerAddedTime(addingTime);
         saveContainerToDB(*container);
         m_cache.insert(id, container, 1);
     } else {
+        container->setContainerAddedTime(addingTime);
         m_containers.insert(id, container);
     }
     emit containersChanged();
 }
 
-void ContainerMap::addContainers(const QVector<Container*> &containers)
+void ContainerMap::addContainers(const QVector<Container*> &containers, double addingTime)
 {
     for (Container* container : containers) {
         if (container) {
-            addContainer(container->getContainerID(), container);
+            addContainer(container->getContainerID(), container, addingTime);
         }
     }
+}
+
+QVector<Container *> ContainerMap::getContainersByAddedTime(double referenceTime, const QString &condition)
+{
+    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    QVector<Container*> result;
+
+    QString normalizedCondition = condition.trimmed().toLower(); // Convert to lowercase and trim
+
+    // Check for valid conditions
+    if (normalizedCondition != ">" && normalizedCondition != ">=" &&
+        normalizedCondition != "<" && normalizedCondition != "<=" &&
+        normalizedCondition != "=" && normalizedCondition != "!=") {
+        qDebug() << "Invalid condition: must be one of '>', '>=', '<', '<=', '=', or '!='.";
+        return result;
+    }
+
+    if (m_useDatabase) {
+        // If using a database, query based on addedTime
+        QSqlQuery query;
+        QString queryString;
+
+        // Prepare query string based on condition
+        if (normalizedCondition == ">") {
+            queryString = "SELECT id FROM Containers WHERE addedTime > :referenceTime";
+        } else if (normalizedCondition == ">=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime >= :referenceTime";
+        } else if (normalizedCondition == "<") {
+            queryString = "SELECT id FROM Containers WHERE addedTime < :referenceTime";
+        } else if (normalizedCondition == "<=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime <= :referenceTime";
+        } else if (normalizedCondition == "=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime = :referenceTime";
+        } else if (normalizedCondition == "!=") {
+            queryString = "SELECT id FROM Containers WHERE addedTime != :referenceTime";
+        }
+
+        query.prepare(queryString);
+        query.bindValue(":referenceTime", referenceTime);
+
+        if (query.exec()) {
+            while (query.next()) {
+                QString containerId = query.value(0).toString();
+                Container* container = getContainer(containerId);
+                if (container) {
+                    result.append(container);
+                }
+            }
+        } else {
+            emit databaseErrorOccurred("Failed to query containers by added time.");
+            qDebug() << "Failed to query containers by added time:" << query.lastError().text();
+        }
+    } else {
+        // If not using a database, filter in-memory containers
+        for (auto it = m_containers.begin(); it != m_containers.end(); ++it) {
+            Container* container = it.value();
+            if (container) {
+                double addedTime = container->getContainerAddedTime();
+                bool conditionMet = false;
+
+                // Perform the comparison based on the condition
+                if (normalizedCondition == ">" && addedTime > referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == ">=" && addedTime >= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<" && addedTime < referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<=" && addedTime <= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "=" && addedTime == referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "!=" && addedTime != referenceTime) {
+                    conditionMet = true;
+                }
+
+                if (conditionMet) {
+                    result.append(container);
+                }
+            }
+        }
+    }
+
+    return result;
 }
 
 Container* ContainerMap::getContainer(const QString &id)
@@ -477,7 +562,8 @@ void ContainerMap::createTables()
     query.exec("CREATE TABLE IF NOT EXISTS Containers ("
                "id TEXT PRIMARY KEY, "
                "size INTEGER, "
-               "currentLocation TEXT);");
+               "currentLocation TEXT, "
+               "addedTime REAL);");
 
     query.exec("CREATE TABLE IF NOT EXISTS NextDestinations ("
                "container_id TEXT, "
@@ -509,7 +595,7 @@ void ContainerMap::loadContainerFromDB(const QString &id)
     QMutexLocker locker(&m_mutex); // Ensure thread safety
 
     QSqlQuery query;
-    query.prepare("SELECT size, currentLocation FROM Containers "
+    query.prepare("SELECT size, currentLocation, addedTime FROM Containers "
                   "WHERE id = :id");
     query.bindValue(":id", id);
 
@@ -517,9 +603,16 @@ void ContainerMap::loadContainerFromDB(const QString &id)
         Container::ContainerSize size =
             static_cast<Container::ContainerSize>(query.value(0).toInt());
         QString currentLocation = query.value(1).toString();
+        double addedTime;
+        if (query.value(2).isNull()) {
+            addedTime = std::nan(""); // Set to NaN if the database value is NULL
+        } else {
+            addedTime = query.value(2).toDouble();
+        }
 
         Container* container = new Container(id, size);
         container->setContainerCurrentLocation(currentLocation);
+        container->setContainerAddedTime(addedTime);
 
         bool loadSuccessful = true;
 
@@ -623,11 +716,17 @@ void ContainerMap::saveContainerToDB(const Container &container)
     QSqlDatabase::database().transaction(); // Start transaction
 
     QSqlQuery query;
-    query.prepare("REPLACE INTO Containers (id, size, currentLocation) "
-                  "VALUES (:id, :size, :currentLocation)");
+    query.prepare("REPLACE INTO Containers (id, size, currentLocation, addedTime) "
+                  "VALUES (:id, :size, :currentLocation, :addedTime)");
     query.bindValue(":id", container.getContainerID());
     query.bindValue(":size", static_cast<int>(container.getContainerSize()));
     query.bindValue(":currentLocation", container.getContainerCurrentLocation());
+    double addedTime = container.getContainerAddedTime();
+    if (std::isnan(addedTime)) {
+        query.bindValue(":addedTime", QVariant::fromValue<double>(std::nan("")));
+    } else {
+        query.bindValue(":addedTime", addedTime);
+    }
 
     bool allSuccessful = query.exec();
 

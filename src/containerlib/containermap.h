@@ -39,10 +39,12 @@ public:
     ContainerMap& operator=(const ContainerMap &other);
 
     // Add a container to the map
-    void addContainer(const QString &id, Container* container);
+    void addContainer(const QString &id, Container* container, double addingTime = std::nan("notDefined"));
 
     // Add a list of containers to the map
-    void addContainers(const QVector<Container*> &containers);
+    void addContainers(const QVector<Container*> &containers, double addingTime = std::nan("notDefined"));
+
+    QVector<Container *> getContainersByAddedTime(double referenceTime, const QString &condition);
 
     // Get a container by ID
     Container* getContainer(const QString &id);
