@@ -130,6 +130,19 @@ void Container::setContainerID(const QString &id) {
     }
 }
 
+double Container::getContainerAddedTime() const
+{
+    return m_addedTime;
+}
+
+void Container::setContainerAddedTime(const double &time)
+{
+    if (time != m_addedTime) {
+        m_addedTime = time;
+        emit containerAddedTimeChanged();
+    }
+}
+
 Container::ContainerSize Container::getContainerSize() const {
     return m_containerSize;
 }
