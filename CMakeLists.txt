@@ -111,10 +111,6 @@ if(BUILD_PYTHON_PACKAGE)
 
 endif()
 
-# Add option to choose between shared and static libraries
-option(BUILD_SHARED_LIBS "Build libraries as shared (ON) or static (OFF)" ON)
-set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE BOOL "Build libraries as shared (ON) or static (OFF)" FORCE)
-
 # -------------------------------------------------------
 # ---------------- RULES AND SUB PROJECTS ---------------
 # -------------------------------------------------------
