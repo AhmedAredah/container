@@ -19,13 +19,14 @@ cd build
 
 # Set the Qt path
 QT_PATH="/home/ahmed/Qt/6.4.3/gcc_64/lib/cmake/Qt6"
+PYTHON_PATH="/home/ahmed/miniconda3/envs/cargonetsim/bin/python"
 
 # Configure and build in Debug mode
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$QT_PATH"
+cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_PREFIX_PATH="$QT_PATH" -DPYTHON_EXECUTABLE="$PYTHON_PATH"
 make install -j$(nproc)
 
 # Configure and build in Release mode
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PATH"
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH="$QT_PATH" -DPYTHON_EXECUTABLE="$PYTHON_PATH"
 make install -j$(nproc)
 
 echo "Build process completed."
