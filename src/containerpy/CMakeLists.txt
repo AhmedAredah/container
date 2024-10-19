@@ -90,22 +90,27 @@ cmake_path(GET QT_DIR PARENT_PATH QT_INSTALL_PREFIX_1)  # Goes from .../cmake/Qt
 cmake_path(GET QT_INSTALL_PREFIX_1 PARENT_PATH QT_INSTALL_PREFIX_2)  # Goes from .../cmake to .../lib
 cmake_path(GET QT_INSTALL_PREFIX_2 PARENT_PATH QT_INSTALL_PREFIX)  # Goes from .../lib to .../msvc2019_64
 
-
-# Set the Qt bin directory
-set(QT_BIN_DIR "${QT_INSTALL_PREFIX}/bin")
-
-message(STATUS "Qt bin directory: ${QT_BIN_DIR}")
-
 if(WIN32)
     # Windows platform
+    # Set the Qt bin directory
+    set(QT_BIN_DIR "${QT_INSTALL_PREFIX}/bin")
     set(QT_LIB_EXT ".dll")
+    set(QT_LIB_PREF "")
 elseif(APPLE)
     # macOS platform
+    # Set the Qt bin directory
+    set(QT_BIN_DIR "${QT_INSTALL_PREFIX}/lib")
     set(QT_LIB_EXT ".dylib")
+    set(QT_LIB_PREF "")
 else()
     # Linux and other platforms
-    set(QT_LIB_EXT ".so")
+    # Set the Qt bin directory
+    set(QT_BIN_DIR "${QT_INSTALL_PREFIX}/lib")
+    set(QT_LIB_EXT ".so.6")
+    set(QT_LIB_PREF "lib")
 endif()
+
+message(STATUS "Qt bin directory: ${QT_BIN_DIR}")
 
 # Copy the .pyd and .dll files to the Python environment's site-packages directory
 add_custom_command(TARGET ${PYTHON_LIB_NAME} POST_BUILD
@@ -114,11 +119,11 @@ add_custom_command(TARGET ${PYTHON_LIB_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         $<TARGET_FILE:${Container_NAME}> ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/Qt6Core${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
+        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Core${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/Qt6Network${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
+        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Network${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/Qt6Xml${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
+        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Xml${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/Qt6Sql${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
+        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Sql${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
 )
