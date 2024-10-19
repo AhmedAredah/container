@@ -10,31 +10,8 @@ endif()
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 
-## -----------------------------------------------------------------------------
-## ------------------------ Defining Python Env --------------------------------
-## -----------------------------------------------------------------------------
-
-# Set the default Python executable location to be the Conda environment at
-## "C:\ProgramData\Anaconda3\envs\containerModeler\python.exe"
-# Allow the user to override this value with -DPYTHON_EXECUTABLE=<path>
-set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/containerModeler/python.exe" CACHE PATH "Path to the Python executable")
-
-# Make sure the user provides or confirms the Python path
-if(NOT EXISTS ${PYTHON_EXECUTABLE})
-    message(FATAL_ERROR "The specified Python executable does not exist: ${PYTHON_EXECUTABLE}")
-else()
-    message(STATUS "Using Python from: ${PYTHON_EXECUTABLE}")
-endif()
-
-# Set Python_EXECUTABLE variable to override the default one found by CMake
-set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
-
 # Find Python using the specified Python executable
 find_package(Python REQUIRED COMPONENTS Interpreter Development)
-
-## -----------------------------------------------------------------------------
-
-
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Concurrent Xml Network Sql)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Concurrent Xml Network Sql)
 

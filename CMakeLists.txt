@@ -73,14 +73,47 @@ endif()
 # Add option to choose between building python package or not
 option(BUILD_PYTHON_PACKAGE "Build the Python bindings for the project" ON)
 set(BUILD_PYTHON_PACKAGE ${BUILD_PYTHON_PACKAGE} CACHE BOOL "Build the Python bindings for the project" FORCE)
-# Set the default value for pybind11 hints path
-set(PYBIND11_HINTS_PATH "C:/ProgramData/Anaconda3/envs/containerModeler/Lib/site-packages/pybind11/share/cmake/pybind11" CACHE STRING "Path to pybind11 CMake configuration")
 
+# If Python bindings are to be built, set the necessary variables
+if(BUILD_PYTHON_PACKAGE)
+
+    # Set the default Python executable location to be the Conda environment at
+    ## "C:\ProgramData\Anaconda3\envs\containerModeler\python.exe"
+    # Allow the user to override this value with -DPYTHON_EXECUTABLE=<path>
+    set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/containerModeler/python.exe" CACHE PATH "Path to the Python executable")
+
+    # Make sure the user provides or confirms the Python path
+    if(NOT EXISTS ${PYTHON_EXECUTABLE})
+        message(FATAL_ERROR "The specified Python executable does not exist: ${PYTHON_EXECUTABLE}")
+    else()
+        message(STATUS "Using Python from: ${PYTHON_EXECUTABLE}")
+    endif()
+
+    # Set Python_EXECUTABLE variable to override the default one found by CMake
+    set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
+
+    # Attempt to find the pybind11 CMake directory using the Python executable
+    execute_process(
+        COMMAND ${Python_EXECUTABLE} -c "import pybind11; print(pybind11.get_cmake_dir())"
+        OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
+        ERROR_VARIABLE PYBIND11_ERROR
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Check if the command succeeded (i.e., pybind11 is installed)
+    if (PYBIND11_CMAKE_DIR)
+        # Cache the PYBIND11_HINTS_PATH variable for later use
+        set(PYBIND11_HINTS_PATH ${PYBIND11_CMAKE_DIR} CACHE STRING "Path to the pybind11 CMake configuration directory")
+        message(STATUS "pybind11 is installed. CMake directory: ${PYBIND11_HINTS_PATH}")
+    else()
+        message(FATAL_ERROR "pybind11 is not installed or could not be found. Error: ${PYBIND11_ERROR}")
+    endif()
+
+endif()
 
 # Add option to choose between shared and static libraries
 option(BUILD_SHARED_LIBS "Build libraries as shared (ON) or static (OFF)" ON)
 set(BUILD_SHARED_LIBS ${BUILD_SHARED_LIBS} CACHE BOOL "Build libraries as shared (ON) or static (OFF)" FORCE)
-
 
 # -------------------------------------------------------
 # ---------------- RULES AND SUB PROJECTS ---------------
