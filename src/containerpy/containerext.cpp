@@ -36,10 +36,20 @@ std::string ContainerExt::getContainerID() const {
     return mContainer ? mContainer->getContainerID().toStdString() : "";
 }
 
-void ContainerExt::setContainerIDStd(const std::string &id) {
+void ContainerExt::setContainerID(const std::string &id) {
     if (mContainer) {
         mContainer->setContainerID(QString::fromStdString(id));
     }
+}
+
+ContainerExt::ContainerSize ContainerExt::getContainerSize() const
+{
+    return static_cast<ContainerExt::ContainerSize>(mContainer->getContainerSize());
+}
+
+void ContainerExt::setContainerSize(ContainerSize size)
+{
+    mContainer->setContainerSize(static_cast<ContainerCore::Container::ContainerSize>(size));
 }
 
 std::vector<PackageExt*> ContainerExt::getPackages() const {
@@ -117,16 +127,16 @@ std::string ContainerExt::getCustomVariable(HaulerType hauler,
     return "Unsupported type";
 }
 
-std::string ContainerExt::getContainerCurrentLocationStd() const
+std::string ContainerExt::getContainerCurrentLocation() const
 {
     return mContainer->getContainerCurrentLocation().toStdString();
 }
 
-void ContainerExt::setContainerCurrentLocationStd(const std::string &location) {
+void ContainerExt::setContainerCurrentLocation(const std::string &location) {
     mContainer->setContainerCurrentLocation(QString::fromStdString(location));
 }
 
-std::vector<std::string> ContainerExt::getContainerNextDestinationsStd() const
+std::vector<std::string> ContainerExt::getContainerNextDestinations() const
 {
     std::vector<std::string> results;
     for (auto &e : mContainer->getContainerNextDestinations()) {
@@ -135,7 +145,7 @@ std::vector<std::string> ContainerExt::getContainerNextDestinationsStd() const
     return results;
 }
 
-void ContainerExt::setContainerNextDestinationsStd(
+void ContainerExt::setContainerNextDestinations(
     const std::vector<std::string> &destinations)
 {
     QVector<QString> values;
@@ -145,15 +155,15 @@ void ContainerExt::setContainerNextDestinationsStd(
     mContainer->setContainerNextDestinations(values);
 }
 
-void ContainerExt::addDestinationStd(const std::string &destination) {
+void ContainerExt::addDestination(const std::string &destination) {
     mContainer->addDestination(QString::fromStdString(destination));
 }
 
-bool ContainerExt::removeDestinationStd(const std::string &destination) {
+bool ContainerExt::removeDestination(const std::string &destination) {
     return mContainer->removeDestination(QString::fromStdString(destination));
 }
 
-std::vector<std::string> ContainerExt::getContainerMovementHistoryStd() const {
+std::vector<std::string> ContainerExt::getContainerMovementHistory() const {
     std::vector<std::string> results;
     for (auto &e : mContainer->getContainerMovementHistory()) {
         results.push_back(e.toStdString());
@@ -161,7 +171,7 @@ std::vector<std::string> ContainerExt::getContainerMovementHistoryStd() const {
     return results;
 }
 
-void ContainerExt::setContainerMovementHistoryStd(
+void ContainerExt::setContainerMovementHistory(
     const std::vector<std::string> &history) {
 
     QVector<QString> values;
@@ -170,11 +180,11 @@ void ContainerExt::setContainerMovementHistoryStd(
     }
     mContainer->setContainerMovementHistory(values);
 }
-void ContainerExt::addMovementHistoryStd(const std::string &history) {
+void ContainerExt::addMovementHistory(const std::string &history) {
     mContainer->addMovementHistory(QString::fromStdString(history));
 }
 
-bool ContainerExt::removeMovementHistoryStd(const std::string &history) {
+bool ContainerExt::removeMovementHistory(const std::string &history) {
     return mContainer->removeMovementHistory(QString::fromStdString(history));
 }
 

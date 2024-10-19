@@ -37,7 +37,7 @@ public:
     ContainerExt& operator=(const ContainerExt &other);
 
     std::string getContainerID() const;
-    void setContainerIDStd(const std::string &id);
+    void setContainerID(const std::string &id);
 
     ContainerSize getContainerSize() const;
     void setContainerSize(ContainerSize size);
@@ -52,18 +52,18 @@ public:
     void removeCustomVariable(HaulerType hauler, const std::string &key);
     std::string getCustomVariable(HaulerType hauler, const std::string &key) const;
 
-    std::string getContainerCurrentLocationStd() const;
-    void setContainerCurrentLocationStd(const std::string &location);
+    std::string getContainerCurrentLocation() const;
+    void setContainerCurrentLocation(const std::string &location);
 
-    std::vector<std::string> getContainerNextDestinationsStd() const;
-    void setContainerNextDestinationsStd(const std::vector<std::string> &destinations);
-    void addDestinationStd(const std::string &destination);
-    bool removeDestinationStd(const std::string &destination);
+    std::vector<std::string> getContainerNextDestinations() const;
+    void setContainerNextDestinations(const std::vector<std::string> &destinations);
+    void addDestination(const std::string &destination);
+    bool removeDestination(const std::string &destination);
 
-    std::vector<std::string> getContainerMovementHistoryStd() const;
-    void setContainerMovementHistoryStd(const std::vector<std::string> &history);
-    void addMovementHistoryStd(const std::string &history);
-    bool removeMovementHistoryStd(const std::string &history);
+    std::vector<std::string> getContainerMovementHistory() const;
+    void setContainerMovementHistory(const std::vector<std::string> &history);
+    void addMovementHistory(const std::string &history);
+    bool removeMovementHistory(const std::string &history);
 
     ContainerCore::Container *getBaseContainer();
 
