@@ -14,6 +14,7 @@ add_library(${Container_NAME} SHARED
   Container_global.h
   package.h package.cpp
   container.h container.cpp
+  cache.h
   containermap.h containermap.cpp
 )
 
