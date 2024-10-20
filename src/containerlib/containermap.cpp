@@ -184,7 +184,7 @@ Container* ContainerMap::getContainer(const QString &id)
 
 Container* ContainerMap::getContainerByID(const QString &id)
 {
-    // QMutexLocker locker(&m_mutex);
+    QMutexLocker locker(&m_mutex);
 
     return getContainer(id);
 }
