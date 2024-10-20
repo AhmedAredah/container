@@ -140,3 +140,6 @@ add_custom_target(
     COMMAND ${Python_EXECUTABLE} ${SETUP_PY_PATH} install --prefix=${PYTHON_SITE_PACKAGES}
     COMMENT "Installing Python module using setup.py into ${PYTHON_SITE_PACKAGES}"
 )
+
+# Ensure install_python_module runs after the main build target
+add_dependencies(install_python_module ${PYTHON_LIB_NAME})
