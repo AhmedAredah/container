@@ -17,9 +17,9 @@ public:
     void addContainers(const std::vector<ContainerExt*> &containers, double addingTime);
     void addContainers(const QJsonObject &json, double addingTime);
 
-    ContainerExt* getContainer(const std::string &id);
+    ContainerExt* getContainerByID(const std::string &id);
 
-    void removeContainer(const std::string &id);
+    void removeContainerByID(const std::string &id);
 
     std::vector<ContainerExt *> getAllContainers();
 

@@ -52,6 +52,22 @@ void ContainerExt::setContainerID(const std::string &id) {
     }
 }
 
+double ContainerExt::getContainerAddedTime() const
+{
+    if (mContainer) {
+        return mContainer->getContainerAddedTime();
+    }
+
+    return std::nan("containerNotDefined");
+}
+
+void ContainerExt::setContainerAddedTime(double &time)
+{
+    if (mContainer) {
+        mContainer->setContainerAddedTime(time);
+    }
+}
+
 ContainerExt::ContainerSize ContainerExt::getContainerSize() const
 {
     return static_cast<ContainerExt::ContainerSize>(mContainer->getContainerSize());

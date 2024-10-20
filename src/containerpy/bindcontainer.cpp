@@ -144,6 +144,8 @@ PYBIND11_MODULE(ContainerPy, m) {
         .def("set_container_size", &ContainerExt::setContainerSize, py::arg("size"))
         .def("add_package", &ContainerExt::addPackage, py::arg("package"),
              "Add a package to the container.")
+        .def("get_container_added_time", &ContainerExt::getContainerAddedTime, py::return_value_policy::reference)
+        .def("set_container_added_time", &ContainerExt::setContainerAddedTime)
         .def("add_custom_variable",
              static_cast<void (ContainerExt::*)(ContainerExt::HaulerType, const std::string&, const std::string&)>(&ContainerExt::addCustomVariable),
              py::arg("hauler"), py::arg("key"), py::arg("value"),
@@ -250,17 +252,18 @@ PYBIND11_MODULE(ContainerPy, m) {
                 }
             }, py::arg("json_dict"), py::arg("addingTime") = std::nan(""),
             "Add multiple containers to the ContainerMap from a JSON-like Python dictionary.")
-        .def("remove_container", &ContainerMapExt::removeContainer)
-        .def("get_all_containers", &ContainerMapExt::getAllContainers)
-        .def("get_latest_containers", &ContainerMapExt::getLatestContainers)
-        .def("size", &ContainerMapExt::size)
+        .def("remove_container_by_id", &ContainerMapExt::removeContainerByID)
+        .def("get_all_containers", &ContainerMapExt::getAllContainers, py::return_value_policy::reference)
+        .def("get_container_by_id", &ContainerMapExt::getContainerByID, py::return_value_policy::reference)
+        .def("get_latest_containers", &ContainerMapExt::getLatestContainers, py::return_value_policy::reference)
+        .def("size", &ContainerMapExt::size, py::return_value_policy::copy)
         .def("get_containers_by_added_time",
              &ContainerMapExt::getContainersByAddedTime,
-             py::arg("referenceTime"), py::arg("condition"))
+             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
         .def("dequeue_containers_by_added_time", &ContainerMapExt::dequeueContainersByAddedTime,
-             py::arg("referenceTime"), py::arg("condition"))
-        .def("get_containers_by_next_destination", &ContainerMapExt::getContainersByNextDestination)
-        .def("dequeue_containers_by_next_destination", &ContainerMapExt::dequeueContainerByNextDestination)
+             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
+        .def("get_containers_by_next_destination", &ContainerMapExt::getContainersByNextDestination, py::return_value_policy::reference)
+        .def("dequeue_containers_by_next_destination", &ContainerMapExt::dequeueContainerByNextDestination, py::return_value_policy::reference)
         .def("to_json", [](ContainerMapExt &self) {
                 return ContainerMapExtToPyDict(self);
             }, "Extract ContainerMap information to a Python dictionary");

@@ -41,6 +41,9 @@ public:
     std::string getContainerID() const;
     void setContainerID(const std::string &id);
 
+    double getContainerAddedTime() const;
+    void setContainerAddedTime(double &time);
+
     ContainerSize getContainerSize() const;
     void setContainerSize(ContainerSize size);
 

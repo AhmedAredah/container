@@ -2,15 +2,21 @@
 
 ContainerMapExt::ContainerMapExt()
     : mContainerMap{nullptr}
-{}
+{
+        mContainerMap.setIsRunningThroughPython(true);
+}
 
 ContainerMapExt::ContainerMapExt(const std::string &dbLocation)
     : mContainerMap(QString::fromStdString(dbLocation))
-{}
+{
+    mContainerMap.setIsRunningThroughPython(true);
+}
 
 ContainerMapExt::ContainerMapExt(const QJsonObject &json)
     : mContainerMap(json, nullptr)
-{}
+{
+        mContainerMap.setIsRunningThroughPython(true);
+}
 
 void ContainerMapExt::addContainer(ContainerExt *container, double addingTime)
 {
@@ -46,15 +52,15 @@ std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByAddedTime(double
     return convertQVecContainerToSTDVecContainerExt(results);
 }
 
-ContainerExt* ContainerMapExt::getContainer(const std::string &id)
+ContainerExt* ContainerMapExt::getContainerByID(const std::string &id)
 {
-    ContainerCore::Container* baseContainer = mContainerMap.getContainer(QString::fromStdString(id));
+    ContainerCore::Container* baseContainer = mContainerMap.getContainerByID(QString::fromStdString(id));
     return toContainerExt(baseContainer);
 }
 
-void ContainerMapExt::removeContainer(const std::string &id)
+void ContainerMapExt::removeContainerByID(const std::string &id)
 {
-    mContainerMap.removeContainer(QString::fromStdString(id));
+    mContainerMap.removeContainerByID(QString::fromStdString(id));
 }
 
 std::vector<ContainerExt *> ContainerMapExt::getAllContainers()

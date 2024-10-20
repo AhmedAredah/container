@@ -13,6 +13,7 @@
 #include <QCache>
 #include <QJsonObject>
 #include <QJsonArray>
+#include "cache.h"
 #include "container.h"
 
 namespace ContainerCore {
@@ -38,6 +39,8 @@ public:
     // Assignment operator
     ContainerMap& operator=(const ContainerMap &other);
 
+    void setIsRunningThroughPython(bool isRunningThroughPython);
+
     // Add a container to the map
     void addContainer(const QString &id, Container* container, double addingTime = std::nan("notDefined"));
 
@@ -47,15 +50,15 @@ public:
     void addContainers(const QJsonObject &json, double addingTime = std::nan("notDefined"));
 
     // Get a container by ID
-    Container* getContainer(const QString &id);
+    Container* getContainerByID(const QString &id);
 
     // Remove a container by ID
-    void removeContainer(const QString &id);
+    void removeContainerByID(const QString &id);
 
     // Get the map of containers
     QMap<QString, Container*> getAllContainers() const;
 
-    QMap<QString, Container*> getLatestContainers() const;
+    QMap<QString, Container*> getLatestContainers();
 
     // Clear the map
     void clear();
@@ -98,10 +101,11 @@ signals:
 private:
     QMap<QString, Container*> m_containers;
     QSqlDatabase m_db;
-    QCache<QString, Container> m_cache;
+    Cache<Container> m_cache;
     mutable QMutex m_mutex;
 
     bool m_useDatabase;
+    bool m_isRunningThroughPython = false;
 
     // Helper function to deep copy containers
     void deepCopy(const ContainerMap &other);
@@ -114,6 +118,10 @@ private:
     void removeContainerFromDB(const QString &id);
     void clearDatabase();
     void loadAdditionalContainerData(Container &container) const;
+    Container* getContainer(const QString &id);
+    void removeContainer(const QString &id);
+    void addContainerUtil(const QString &id, Container* container, double addingTime = std::nan("notDefined"));
+    void clearUtil(bool enableClearDatabase = false, bool enableEmit = true);
 };
 }
 

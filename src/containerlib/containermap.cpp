@@ -5,6 +5,8 @@
 #include <QVariant>
 #include <QDebug>
 #include <QFile>
+#include <iostream>
+#include <QCryptographicHash>
 
 namespace ContainerCore {
 
@@ -51,7 +53,7 @@ ContainerMap::ContainerMap(const QJsonObject &json, QObject *parent)
                         QJsonObject containerObject = value.toObject();
                         Container *container =
                             new Container(containerObject, this);
-                        addContainer(container->getContainerID(), container);
+                        addContainerUtil(container->getContainerID(), container);
                     } catch (const std::exception &e) {
                         qDebug() << "Error initializing container from JSON: "
                                  << e.what();
@@ -65,9 +67,12 @@ ContainerMap::ContainerMap(const QJsonObject &json, QObject *parent)
 
 ContainerMap::~ContainerMap()
 {
-    clear();
+    clearUtil(false, false);
     if (m_useDatabase) {
+        QString connectionName = m_db.connectionName();
         m_db.close();
+        m_db = QSqlDatabase();
+        QSqlDatabase::removeDatabase(connectionName); // Clean up the database connection
     }
 }
 
@@ -84,19 +89,23 @@ ContainerMap& ContainerMap::operator=(const ContainerMap &other)
 {
     if (this != &other) {
         QMutexLocker locker(&other.m_mutex);
-        clear();
+        clearUtil(true, false);
         deepCopy(other);
     }
     return *this;
 }
 
-void ContainerMap::addContainer(const QString &id, Container* container, double addingTime)
+void ContainerMap::setIsRunningThroughPython(bool isRunningThroughPython)
 {
-    QMutexLocker locker(&m_mutex);
+    m_isRunningThroughPython = isRunningThroughPython;
+    m_cache.setDeleteWhileDestructing(!isRunningThroughPython);
+}
 
+void ContainerMap::addContainerUtil(const QString &id, Container* container, double addingTime)
+{
     if (m_useDatabase) {
         container->setContainerAddedTime(addingTime);
-        m_cache.insert(id, container, 1);
+        m_cache.insert(id, container);
         saveContainerToDB(*container);
     } else {
         container->setContainerAddedTime(addingTime);
@@ -105,11 +114,18 @@ void ContainerMap::addContainer(const QString &id, Container* container, double 
     emit containersChanged();
 }
 
+void ContainerMap::addContainer(const QString &id, Container* container, double addingTime)
+{
+    QMutexLocker locker(&m_mutex);
+
+    addContainerUtil(id, container, addingTime);
+}
+
 void ContainerMap::addContainers(const QVector<Container*> &containers, double addingTime)
 {
     for (Container* container : containers) {
         if (container) {
-            addContainer(container->getContainerID(), container, addingTime);
+            addContainerUtil(container->getContainerID(), container, addingTime);
         }
     }
 }
@@ -138,7 +154,7 @@ void ContainerMap::addContainers(const QJsonObject &json, double addingTime) {
             Container *container = new Container(containerObj, this);
 
             // Add the container to the ContainerMap
-            this->addContainer(container->getContainerID(), container, addingTime);
+            this->addContainerUtil(container->getContainerID(), container, addingTime);
         } catch (const std::invalid_argument &e) {
             // Handle any exceptions thrown by the Container constructor
             qWarning() << "Failed to add container with ID: "
@@ -151,14 +167,11 @@ void ContainerMap::addContainers(const QJsonObject &json, double addingTime) {
                        << ". Error: " << e.what();
         }
     }
-    emit containersChanged();
 }
 
 
 Container* ContainerMap::getContainer(const QString &id)
 {
-    QMutexLocker locker(&m_mutex);
-
     if (m_useDatabase) {
         if (!m_cache.contains(id)) {
             loadContainerFromDB(id);
@@ -169,17 +182,32 @@ Container* ContainerMap::getContainer(const QString &id)
     }
 }
 
+Container* ContainerMap::getContainerByID(const QString &id)
+{
+    // QMutexLocker locker(&m_mutex);
+
+    return getContainer(id);
+}
+
 void ContainerMap::removeContainer(const QString &id)
 {
-    QMutexLocker locker(&m_mutex);
-
     if (m_useDatabase) {
         removeContainerFromDB(id);
         m_cache.remove(id);
     } else {
-        delete m_containers.take(id);
+        auto containerPtr = m_containers.take(id);
+        if (containerPtr && !m_isRunningThroughPython) {
+            delete containerPtr;
+        }
     }
     emit containersChanged();
+}
+
+void ContainerMap::removeContainerByID(const QString &id)
+{
+    QMutexLocker locker(&m_mutex);
+
+    removeContainer(id);
 }
 
 QMap<QString, Container*> ContainerMap::getAllContainers() const
@@ -189,7 +217,7 @@ QMap<QString, Container*> ContainerMap::getAllContainers() const
 
     if (m_useDatabase) {
         // Query the database to retrieve all containers
-        QSqlQuery query("SELECT id, size, currentLocation, addedTime FROM Containers");
+        QSqlQuery query("SELECT id, size, currentLocation, addedTime FROM Containers", m_db);
         while (query.next()) {
             QString id = query.value("id").toString();
             int size = query.value("size").toInt();
@@ -225,7 +253,7 @@ QMap<QString, Container*> ContainerMap::getAllContainers() const
 void ContainerMap::loadAdditionalContainerData(Container &container) const
 {
     // Load packages
-    QSqlQuery packageQuery;
+    QSqlQuery packageQuery(m_db);
     packageQuery.prepare("SELECT id FROM Packages WHERE container_id = :container_id");
     packageQuery.bindValue(":container_id", container.getContainerID());
     packageQuery.exec();
@@ -238,7 +266,7 @@ void ContainerMap::loadAdditionalContainerData(Container &container) const
     }
 
     // Load custom variables
-    QSqlQuery customVarQuery;
+    QSqlQuery customVarQuery(m_db);
     customVarQuery.prepare("SELECT hauler_type, key, value FROM CustomVariables WHERE container_id = :container_id");
     customVarQuery.bindValue(":container_id", container.getContainerID());
     customVarQuery.exec();
@@ -251,7 +279,7 @@ void ContainerMap::loadAdditionalContainerData(Container &container) const
     }
 
     // Load next destinations
-    QSqlQuery nextDestQuery;
+    QSqlQuery nextDestQuery(m_db);
     nextDestQuery.prepare("SELECT destination FROM NextDestinations WHERE container_id = :container_id");
     nextDestQuery.bindValue(":container_id", container.getContainerID());
     nextDestQuery.exec();
@@ -262,7 +290,7 @@ void ContainerMap::loadAdditionalContainerData(Container &container) const
     }
 
     // Load movement history
-    QSqlQuery movementHistoryQuery;
+    QSqlQuery movementHistoryQuery(m_db);
     movementHistoryQuery.prepare("SELECT history FROM MovementHistory WHERE container_id = :container_id");
     movementHistoryQuery.bindValue(":container_id", container.getContainerID());
     movementHistoryQuery.exec();
@@ -273,7 +301,7 @@ void ContainerMap::loadAdditionalContainerData(Container &container) const
     }
 }
 
-QMap<QString, Container *> ContainerMap::getLatestContainers() const
+QMap<QString, Container *> ContainerMap::getLatestContainers()
 {
     QMutexLocker locker(&m_mutex);
 
@@ -288,18 +316,27 @@ QMap<QString, Container *> ContainerMap::getLatestContainers() const
     }
 }
 
-void ContainerMap::clear()
+void ContainerMap::clearUtil(bool enableClearDatabase, bool enableEmit)
 {
-    QMutexLocker locker(&m_mutex);
-
     if (m_useDatabase) {
-        clearDatabase();
-        m_cache.clear();
+        if (enableClearDatabase) {
+            clearDatabase();
+        }
+        m_cache.clear(!m_isRunningThroughPython);
     } else {
-        qDeleteAll(m_containers);
+        if (!m_isRunningThroughPython) {  // Python handles the pointers not us
+            qDeleteAll(m_containers);
+        }
         m_containers.clear();
     }
-    emit containersChanged();
+    if (enableEmit) {
+        emit containersChanged();
+    }
+}
+
+void ContainerMap::clear() {
+    QMutexLocker locker(&m_mutex);
+    clearUtil(false, true);
 }
 
 void ContainerMap::copyFrom(ContainerMap &other)
@@ -319,7 +356,7 @@ void ContainerMap::copyFrom(ContainerMap &other)
                 Container* container = other.getContainer(containerID);
                 if (container) {
                     // Deep copy of the container
-                    addContainer(containerID,
+                    addContainerUtil(containerID,
                                  new Container(*container));
                 }
             }
@@ -334,7 +371,7 @@ void ContainerMap::copyFrom(ContainerMap &other)
             Container* container = other.getContainer(containerID);
             if (container) {
                 // Deep copy of the container
-                addContainer(containerID,
+                addContainerUtil(containerID,
                              new Container(*container));
             }
         }
@@ -348,7 +385,7 @@ qsizetype ContainerMap::size() const
 
     if (m_useDatabase) {
         // Query the database to count the number of containers
-        QSqlQuery query;
+        QSqlQuery query(m_db);
         query.prepare("SELECT COUNT(*) FROM Containers");
 
         if (query.exec() && query.next()) {
@@ -409,7 +446,7 @@ QVector<Container *> ContainerMap::getContainersByAddedTime(double referenceTime
 
     if (m_useDatabase) {
         // If using a database, query based on addedTime
-        QSqlQuery query;
+        QSqlQuery query(m_db);
         QString queryString;
 
         // Prepare query string based on condition
@@ -492,7 +529,7 @@ QVector<Container *> ContainerMap::dequeueContainersByAddedTime(double reference
 
     if (m_useDatabase) {
         // Retrieve containers from the database based on addedTime
-        QSqlQuery query;
+        QSqlQuery query(m_db);
         QString queryString;
 
         // Prepare query string based on condition
@@ -552,7 +589,9 @@ QVector<Container *> ContainerMap::dequeueContainersByAddedTime(double reference
 
                 if (conditionMet) {
                     matchingContainers.append(container);
-                    delete it.value(); // Ensure memory is cleaned
+                    if (it.value() && !m_isRunningThroughPython) {
+                        delete it.value(); // Ensure memory is cleaned
+                    }
                     it = m_containers.erase(it);
                 } else {
                     ++it;
@@ -577,7 +616,7 @@ QVector<Container *> ContainerMap::
     if (m_useDatabase) {
         // If using a database, query for containers with the
         // specified next destination
-        QSqlQuery query;
+        QSqlQuery query(m_db);
         query.prepare("SELECT container_id FROM NextDestinations "
                       "WHERE destination = :destination");
         query.bindValue(":destination", destination);
@@ -616,7 +655,7 @@ QVector<Container *> ContainerMap::dequeueContainersByNextDestination(const QStr
 
     if (m_useDatabase) {
         // Retrieve containers from the database
-        QSqlQuery query;
+        QSqlQuery query(m_db);
         query.prepare("SELECT id FROM Containers WHERE id IN ("
                       "SELECT container_id FROM NextDestinations WHERE "
                       "destination = :destination)");
@@ -643,7 +682,9 @@ QVector<Container *> ContainerMap::dequeueContainersByNextDestination(const QStr
             if (container->getContainerNextDestinations().
                 contains(destination)) {
                 matchingContainers.append(container);
-                delete it.value(); // Ensure memory is cleaned
+                if (it.value() && !m_isRunningThroughPython) {
+                    delete it.value(); // Ensure memory is cleaned
+                }
                 it = m_containers.erase(it);
             } else {
                 ++it;
@@ -657,12 +698,7 @@ QVector<Container *> ContainerMap::dequeueContainersByNextDestination(const QStr
 
 void ContainerMap::deepCopy(const ContainerMap &other)
 {
-//    QMutexLocker locker(&m_mutex); // Ensure thread safety for this object
-//    QMutexLocker otherLocker(&other.m_mutex); // Ensure thread safety for the source object
-
-
     m_useDatabase = other.m_useDatabase;
-    m_cache.setMaxCost(other.m_cache.maxCost());
 
     if (m_useDatabase) {
         // Copy database reference
@@ -722,7 +758,7 @@ QDataStream &operator>>(QDataStream &in, ContainerMap &containerMap)
         QString id;
         Container *container = new Container();
         in >> id >> *container;
-        containerMap.addContainer(id, container);
+        containerMap.addContainerUtil(id, container);
     }
     return in;
 }
@@ -747,7 +783,7 @@ ContainerMap ContainerMap::fromVariant(const QVariant &variant)
     for (auto it = variantMap.cbegin(); it != variantMap.cend(); ++it) {
         Container *container = new Container();
         *container = it.value().value<Container>();
-        containerMap.addContainer(it.key(), container);
+        containerMap.addContainerUtil(it.key(), container);
     }
     return containerMap;
 }
@@ -757,13 +793,17 @@ bool ContainerMap::openDatabase(const QString &dbLocation)
 {
     QMutexLocker locker(&m_mutex); // Ensure thread safety
 
-    m_db = QSqlDatabase::addDatabase("QSQLITE");
+    QByteArray byteArray = QByteArray::number(reinterpret_cast<quintptr>(this), 16); // Convert to hex string
+    QByteArray hash = QCryptographicHash::hash(byteArray, QCryptographicHash::Md5); // Use MD5 or SHA-1 for short hash
+    QString connectionName = QString("conn_%1").arg(QString(hash.toHex()).left(8)); // Use only a part of the hash
+    m_db = QSqlDatabase::addDatabase("QSQLITE", connectionName);
     m_db.setDatabaseName(dbLocation);
 
     if (!m_db.open()) {
         qDebug() << "Database Error: " << m_db.lastError().text();
         emit databaseErrorOccurred("Database Error: " +
                                    m_db.lastError().text());
+        QSqlDatabase::removeDatabase(connectionName); // Ensure to remove the connection if it fails
         return false;
     }
 
@@ -783,7 +823,7 @@ void ContainerMap::createTables()
 {
     QMutexLocker locker(&m_mutex); // Ensure thread safety
 
-    QSqlQuery query;
+    QSqlQuery query(m_db);
     query.exec("CREATE TABLE IF NOT EXISTS Containers ("
                "id TEXT PRIMARY KEY, "
                "size INTEGER, "
@@ -817,9 +857,7 @@ void ContainerMap::createTables()
 // Helper function to load container from database
 void ContainerMap::loadContainerFromDB(const QString &id)
 {
-    // QMutexLocker locker(&m_mutex); // Ensure thread safety
-
-    QSqlQuery query;
+    QSqlQuery query(m_db);
     query.prepare("SELECT size, currentLocation, addedTime FROM Containers "
                   "WHERE id = :id");
     query.bindValue(":id", id);
@@ -842,7 +880,7 @@ void ContainerMap::loadContainerFromDB(const QString &id)
         bool loadSuccessful = true;
 
         // Load packages
-        QSqlQuery packageQuery;
+        QSqlQuery packageQuery(m_db);
         packageQuery.prepare("SELECT id FROM Packages WHERE "
                              "container_id = :id");
         packageQuery.bindValue(":id", id);
@@ -861,7 +899,7 @@ void ContainerMap::loadContainerFromDB(const QString &id)
         }
 
         // Load custom variables
-        QSqlQuery customVarQuery;
+        QSqlQuery customVarQuery(m_db);
         customVarQuery.prepare("SELECT hauler_type, key, value FROM "
                                "CustomVariables WHERE container_id = :id");
         customVarQuery.bindValue(":id", id);
@@ -883,7 +921,7 @@ void ContainerMap::loadContainerFromDB(const QString &id)
         }
 
         // Load next destinations
-        QSqlQuery nextDestQuery;
+        QSqlQuery nextDestQuery(m_db);
         nextDestQuery.prepare("SELECT destination FROM NextDestinations "
                               "WHERE container_id = :id");
         nextDestQuery.bindValue(":id", id);
@@ -900,7 +938,7 @@ void ContainerMap::loadContainerFromDB(const QString &id)
         }
 
         // Load movement history
-        QSqlQuery historyQuery;
+        QSqlQuery historyQuery(m_db);
         historyQuery.prepare("SELECT history FROM MovementHistory WHERE "
                              "container_id = :id");
         historyQuery.bindValue(":id", id);
@@ -922,7 +960,9 @@ void ContainerMap::loadContainerFromDB(const QString &id)
         } else {
             emit databaseErrorOccurred("Failed to load complete "
                                        "data for container.");
-            delete container; // Clean up to prevent memory leaks
+            if (container && !m_isRunningThroughPython) {
+                delete container; // Clean up to prevent memory leaks
+            }
         }
     } else {
         emit databaseErrorOccurred("Failed to load container from database.");
@@ -935,12 +975,9 @@ void ContainerMap::loadContainerFromDB(const QString &id)
 // Helper function to save container to database
 void ContainerMap::saveContainerToDB(const Container &container)
 {
-    // QMutexLocker locker(&m_mutex); // Ensure thread safety
-
-
     QSqlDatabase::database().transaction(); // Start transaction
 
-    QSqlQuery query;
+    QSqlQuery query(m_db);
     query.prepare("REPLACE INTO Containers (id, size, currentLocation, addedTime) "
                   "VALUES (:id, :size, :currentLocation, :addedTime)");
     query.bindValue(":id", container.getContainerID());
@@ -958,7 +995,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
     // Save packages
     for (auto package : container.getPackages()) {
         if (!allSuccessful) break; // Stop if there's already a failure
-        QSqlQuery packageQuery;
+        QSqlQuery packageQuery(m_db);
         packageQuery.prepare("REPLACE INTO Packages (id, container_id) "
                              "VALUES (:id, :container_id)");
         packageQuery.bindValue(":id", package->packageID());
@@ -972,7 +1009,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
          it != container.getCustomVariables().constEnd(); ++it) {
         for (auto varIt = it.value().constBegin();
              varIt != it.value().constEnd(); ++varIt) {
-            QSqlQuery customVarQuery;
+            QSqlQuery customVarQuery(m_db);
             customVarQuery.prepare("REPLACE INTO CustomVariables "
                                    "(hauler_type, container_id, key, value) "
                                    "VALUES (:hauler_type, "
@@ -990,7 +1027,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
 
     // Save next destinations
     // First, remove existing destinations to avoid duplicates
-    QSqlQuery deleteDestinationsQuery;
+    QSqlQuery deleteDestinationsQuery(m_db);
     deleteDestinationsQuery.prepare("DELETE FROM NextDestinations "
                                     "WHERE container_id = :id");
     deleteDestinationsQuery.bindValue(":id", container.getContainerID());
@@ -1000,7 +1037,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
 
     for (const auto &destination : container.getContainerNextDestinations()) {
         if (!allSuccessful) break;
-        QSqlQuery nextDestQuery;
+        QSqlQuery nextDestQuery(m_db);
         nextDestQuery.prepare("INSERT INTO NextDestinations "
                               "(container_id, destination) "
                               "VALUES (:id, :destination)");
@@ -1012,7 +1049,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
 
     // Save movement history
     // First, remove existing history to avoid duplicates
-    QSqlQuery deleteHistoryQuery;
+    QSqlQuery deleteHistoryQuery(m_db);
     deleteHistoryQuery.prepare("DELETE FROM MovementHistory WHERE "
                                "container_id = :id");
     deleteHistoryQuery.bindValue(":id", container.getContainerID());
@@ -1021,7 +1058,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
 
     for (const auto &history : container.getContainerMovementHistory()) {
         if (!allSuccessful) break;
-        QSqlQuery historyQuery;
+        QSqlQuery historyQuery(m_db);
         historyQuery.prepare("INSERT INTO MovementHistory "
                              "(container_id, history) "
                              "VALUES (:id, :history)");
@@ -1043,9 +1080,7 @@ void ContainerMap::saveContainerToDB(const Container &container)
 // Helper function to remove container from database
 void ContainerMap::removeContainerFromDB(const QString &id)
 {
-    // QMutexLocker locker(&m_mutex); // Ensure thread safety
-
-    QSqlQuery query;
+    QSqlQuery query(m_db);
     query.prepare("DELETE FROM Containers WHERE id = :id");
     query.bindValue(":id", id);
 
@@ -1053,7 +1088,7 @@ void ContainerMap::removeContainerFromDB(const QString &id)
         emit databaseErrorOccurred("Failed to remove container from database.");
     }
 
-    QSqlQuery packageQuery;
+    QSqlQuery packageQuery(m_db);
     packageQuery.prepare("DELETE FROM Packages WHERE container_id = :id");
     packageQuery.bindValue(":id", id);
 
@@ -1061,7 +1096,7 @@ void ContainerMap::removeContainerFromDB(const QString &id)
         emit databaseErrorOccurred("Failed to remove packages from database.");
     }
 
-    QSqlQuery customVarQuery;
+    QSqlQuery customVarQuery(m_db);
     customVarQuery.prepare("DELETE FROM CustomVariables "
                            "WHERE container_id = :id");
     customVarQuery.bindValue(":id", id);
@@ -1072,7 +1107,7 @@ void ContainerMap::removeContainerFromDB(const QString &id)
     }
 
     // Remove next destinations associated with the container
-    QSqlQuery nextDestQuery;
+    QSqlQuery nextDestQuery(m_db);
     nextDestQuery.prepare("DELETE FROM NextDestinations WHERE "
                           "container_id = :id");
     nextDestQuery.bindValue(":id", id);
@@ -1083,7 +1118,7 @@ void ContainerMap::removeContainerFromDB(const QString &id)
     }
 
     // Remove movement history associated with the container
-    QSqlQuery historyQuery;
+    QSqlQuery historyQuery(m_db);
     historyQuery.prepare("DELETE FROM MovementHistory WHERE "
                          "container_id = :id");
     historyQuery.bindValue(":id", id);
@@ -1097,9 +1132,7 @@ void ContainerMap::removeContainerFromDB(const QString &id)
 // Helper function to clear the database
 void ContainerMap::clearDatabase()
 {
-    QMutexLocker locker(&m_mutex); // Ensure thread safety
-
-    QSqlQuery query;
+    QSqlQuery query(m_db);
     query.exec("DELETE FROM Containers");
     query.exec("DELETE FROM Packages");
     query.exec("DELETE FROM CustomVariables");
