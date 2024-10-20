@@ -8,6 +8,10 @@ ContainerMapExt::ContainerMapExt(const std::string &dbLocation)
     : mContainerMap(QString::fromStdString(dbLocation))
 {}
 
+ContainerMapExt::ContainerMapExt(const QJsonObject &json)
+    : mContainerMap(json, nullptr)
+{}
+
 void ContainerMapExt::addContainer(ContainerExt *container, double addingTime)
 {
     if (container) {
@@ -22,6 +26,11 @@ void ContainerMapExt::addContainers(const std::vector<ContainerExt *> &container
             mContainerMap.addContainer(QString::fromStdString(c->getContainerID()), c->getBaseContainer(), addingTime);
         }
     }
+}
+
+void ContainerMapExt::addContainers(const QJsonObject &json, double addingTime)
+{
+    mContainerMap.addContainers(json, addingTime);
 }
 
 std::vector<ContainerExt*> ContainerMapExt::getContainersByAddedTime(double referenceTime, const std::string &condition) {
@@ -78,6 +87,11 @@ std::vector<ContainerExt*> ContainerMapExt::dequeueContainerByNextDestination(co
     auto results = mContainerMap.dequeueContainersByNextDestination(QString::fromStdString(destination));
 
     return convertQVecContainerToSTDVecContainerExt(results);
+}
+
+QJsonObject ContainerMapExt::toJson() const
+{
+    return mContainerMap.toJson();
 }
 
 // Helper method to safely cast ContainerCore::Container* to ContainerExt*

@@ -10,10 +10,12 @@ public:
     explicit ContainerMapExt();
 
     ContainerMapExt(const std::string &dbLocation);
+    ContainerMapExt(const QJsonObject &json);
 
     void addContainer(ContainerExt* container, double addingTime);
 
     void addContainers(const std::vector<ContainerExt*> &containers, double addingTime);
+    void addContainers(const QJsonObject &json, double addingTime);
 
     ContainerExt* getContainer(const std::string &id);
 
@@ -32,6 +34,8 @@ public:
     std::vector<ContainerExt*> getContainersByNextDestination(const std::string &destination);
 
     std::vector<ContainerExt*> dequeueContainerByNextDestination(const std::string &destination);
+
+    QJsonObject toJson() const;
 
 private:
     ContainerCore::ContainerMap mContainerMap;

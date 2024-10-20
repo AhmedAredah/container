@@ -7,6 +7,107 @@
 
 namespace py = pybind11;
 
+py::object QJsonValueToPyObject(const QJsonValue& value);
+
+py::dict QJsonObjectToPyDict(const QJsonObject& jsonObj) {
+    py::dict pyDict;
+    for (auto it = jsonObj.begin(); it != jsonObj.end(); ++it) {
+        const QString& key = it.key();
+        const QJsonValue& value = it.value();
+        pyDict[py::str(key.toStdString())] = QJsonValueToPyObject(value); // Convert key to py::str
+    }
+    return pyDict;
+}
+
+py::list QJsonArrayToPyList(const QJsonArray& jsonArray) {
+    py::list pyList;
+    for (const auto& value : jsonArray) {
+        pyList.append(QJsonValueToPyObject(value));
+    }
+    return pyList;
+}
+
+py::object QJsonValueToPyObject(const QJsonValue& value) {
+    switch (value.type()) {
+    case QJsonValue::Bool:
+        return py::bool_(value.toBool());
+    case QJsonValue::Double:
+        return py::float_(value.toDouble());
+    case QJsonValue::String:
+        return py::str(value.toString().toStdString());
+    case QJsonValue::Array:
+        return QJsonArrayToPyList(value.toArray());
+    case QJsonValue::Object:
+        return QJsonObjectToPyDict(value.toObject());
+    case QJsonValue::Null:
+    default:
+        return py::none();
+    }
+}
+
+py::dict PackageExtToPyDict(const PackageExt& pkg) {
+    QJsonObject json = pkg.toJson();  // Assuming this returns QJsonObject
+    return QJsonObjectToPyDict(json);
+}
+
+py::dict ContainerExtToPyDict(const ContainerExt& container) {
+    QJsonObject json = container.toJson();  // Assuming this returns QJsonObject
+    return QJsonObjectToPyDict(json);
+}
+
+py::dict ContainerMapExtToPyDict(const ContainerMapExt& map) {
+    QJsonObject json = map.toJson();  // Assuming this returns QJsonObject
+    return QJsonObjectToPyDict(json);
+}
+
+// Helper function to convert Python dict to QJsonObject
+QJsonObject PyDictToQJsonObject(const py::dict &pyDict) {
+    QJsonObject jsonObj;
+    for (auto item : pyDict) {
+        QString key = QString::fromStdString(py::str(item.first).cast<std::string>());
+        py::object value = py::reinterpret_borrow<py::object>(item.second);
+
+        // Handle primitive types and nested objects properly
+        if (py::isinstance<py::bool_>(value)) {
+            jsonObj[key] = value.cast<bool>();
+        } else if (py::isinstance<py::int_>(value)) {
+            jsonObj[key] = value.cast<int>();
+        } else if (py::isinstance<py::float_>(value)) {
+            jsonObj[key] = value.cast<double>();
+        } else if (py::isinstance<py::str>(value)) {
+            jsonObj[key] = QString::fromStdString(value.cast<std::string>());
+        } else if (py::isinstance<py::list>(value)) {
+            QJsonArray jsonArray;
+            for (py::handle item : value) {
+                py::object item_obj = py::reinterpret_borrow<py::object>(item);
+                if (py::isinstance<py::str>(item_obj)) {
+                    jsonArray.append(QString::fromStdString(item_obj.cast<std::string>()));
+                } else if (py::isinstance<py::int_>(item_obj)) {
+                    jsonArray.append(item_obj.cast<int>());
+                } else if (py::isinstance<py::float_>(item_obj)) {
+                    jsonArray.append(item_obj.cast<double>());
+                } else if (py::isinstance<py::bool_>(item_obj)) {
+                    jsonArray.append(item_obj.cast<bool>());
+                } else if (py::isinstance<py::dict>(item_obj)) {
+                    // If the list contains a dictionary, convert it to a QJsonObject
+                    jsonArray.append(PyDictToQJsonObject(item_obj.cast<py::dict>()));
+                } else {
+                    qWarning() << "Unsupported data type in list for key:" << key;
+                }
+            }
+            jsonObj[key] = jsonArray;
+        } else if (py::isinstance<py::dict>(value)) {
+            jsonObj[key] = PyDictToQJsonObject(value.cast<py::dict>());
+        } else {
+            qWarning() << "Unsupported data type for key:" << key;
+        }
+    }
+    return jsonObj;
+}
+
+
+
+
 PYBIND11_MODULE(ContainerPy, m) {
     m.doc() = "Pybind11 plugin for Container library";
 
@@ -16,16 +117,27 @@ PYBIND11_MODULE(ContainerPy, m) {
     py::class_<PackageExt>(m, "Package")
         .def(py::init<const std::string &>(), py::arg("id"),
              "Constructor that initializes a Package with the specified ID.")
+        .def(py::init([](const py::dict &pyDict) {
+                 return PackageExt(PyDictToQJsonObject(pyDict));
+             }), py::arg("json_dict"),
+             "Constructor that initializes a Package from a Python dictionary.")
         .def("get_package_id", &PackageExt::packageID,
              "Get the package ID as std::string.")
         .def("set_package_id", &PackageExt::setPackageID, py::arg("id"),
-             "Set the package ID using std::string.");
+             "Set the package ID using std::string.")
+        .def("to_json", [](PackageExt &self) {
+                return PackageExtToPyDict(self);
+            }, "Extract package information to a Python dictionary");
 
     py::class_<ContainerExt>(m, "Container")
         .def(py::init<const std::string &, ContainerExt::ContainerSize>(),
              py::arg("id"),
              py::arg("size"),
              "Constructor that initializes a Container with a specified size.")
+        .def(py::init([](const py::dict &pyDict) {
+                 return ContainerExt(PyDictToQJsonObject(pyDict));
+             }), py::arg("json_dict"),
+             "Constructor that initializes a Package from a Python dictionary.")
         .def("get_container_id", &ContainerExt::getContainerID)
         .def("set_container_id", &ContainerExt::setContainerID, py::arg("id"))
         .def("get_container_size", &ContainerExt::getContainerSize)
@@ -72,7 +184,10 @@ PYBIND11_MODULE(ContainerPy, m) {
              "Set the container's movement history.")
         .def("get_container_movement_history",
              &ContainerExt::getContainerMovementHistory,
-             "Get the container's movement history as a list of strings.");
+             "Get the container's movement history as a list of strings.")
+        .def("to_json", [](ContainerExt &self) {
+                return ContainerExtToPyDict(self);
+            }, "Extract Container information to a Python dictionary");
 
 
     // Binding the ContainerSize enum
@@ -101,15 +216,19 @@ PYBIND11_MODULE(ContainerPy, m) {
     py::class_<ContainerMapExt>(m, "ContainerMap")
         .def(py::init<>())
         .def(py::init<const std::string &>())
+        .def(py::init([](const py::dict &pyDict) {
+                 return ContainerMapExt(PyDictToQJsonObject(pyDict));
+             }), py::arg("json_dict"),
+             "Constructor that initializes a Package from a Python dictionary.")
         .def("add_container",
-            [](ContainerMapExt &self, const std::string &id, ContainerExt* container, double addingTime) {
+            [](ContainerMapExt &self, ContainerExt* container, double addingTime) {
                 // Check if addingTime is NaN and pass it to the C++ function accordingly
                 if (std::isnan(addingTime)) {
                     self.addContainer(container, std::nan(""));
                 } else {
                     self.addContainer(container, addingTime);
                 }
-            }, py::arg("id"), py::arg("container"), py::arg("addingTime") = std::nan(""))
+            }, py::arg("container"), py::arg("addingTime") = std::nan(""))
         .def("add_containers",
             [](ContainerMapExt &self, const std::vector<ContainerExt*> &containers, double addingTime) {
                 // Check if addingTime is NaN and pass it to the C++ function accordingly
@@ -119,7 +238,18 @@ PYBIND11_MODULE(ContainerPy, m) {
                     self.addContainers(containers, addingTime);
                 }
             }, py::arg("containers"), py::arg("addingTime") = std::nan(""))
-
+        .def("add_containers_from_dict",
+            [](ContainerMapExt &self, const py::dict &pyDict, double addingTime) {
+                // Convert the Python dictionary to a QJsonObject
+                QJsonObject jsonObj = PyDictToQJsonObject(pyDict);
+                if (std::isnan(addingTime)) {
+                    self.addContainers(jsonObj, std::nan(""));
+                } else {
+                    // Use the addContainers method that takes a QJsonObject
+                    self.addContainers(jsonObj, addingTime);
+                }
+            }, py::arg("json_dict"), py::arg("addingTime") = std::nan(""),
+            "Add multiple containers to the ContainerMap from a JSON-like Python dictionary.")
         .def("remove_container", &ContainerMapExt::removeContainer)
         .def("get_all_containers", &ContainerMapExt::getAllContainers)
         .def("get_latest_containers", &ContainerMapExt::getLatestContainers)
@@ -130,7 +260,10 @@ PYBIND11_MODULE(ContainerPy, m) {
         .def("dequeue_containers_by_added_time", &ContainerMapExt::dequeueContainersByAddedTime,
              py::arg("referenceTime"), py::arg("condition"))
         .def("get_containers_by_next_destination", &ContainerMapExt::getContainersByNextDestination)
-        .def("dequeue_containers_by_next_destination", &ContainerMapExt::dequeueContainerByNextDestination);
+        .def("dequeue_containers_by_next_destination", &ContainerMapExt::dequeueContainerByNextDestination)
+        .def("to_json", [](ContainerMapExt &self) {
+                return ContainerMapExtToPyDict(self);
+            }, "Extract ContainerMap information to a Python dictionary");
 
 
 }

@@ -5,6 +5,10 @@ PackageExt::PackageExt(const std::string &id)
     : mPackage(new ContainerCore::Package(QString::fromStdString(id)))
 {}
 
+PackageExt::PackageExt(const QJsonObject &json)
+    : mPackage(new ContainerCore::Package(json, nullptr))
+{}
+
 // Constructor that creates a copy of the given Package
 PackageExt::PackageExt(const ContainerCore::Package &pkg)
     : mPackage(new ContainerCore::Package(pkg))
@@ -50,6 +54,11 @@ void PackageExt::setPackageID(const std::string &id) {
 
 std::string PackageExt::packageID() const {
     return mPackage ? mPackage->packageID().toStdString() : "";
+}
+
+QJsonObject PackageExt::toJson() const
+{
+    return mPackage->toJson();
 }
 
 ContainerCore::Package* PackageExt::getBasePackage() {

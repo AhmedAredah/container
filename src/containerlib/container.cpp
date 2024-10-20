@@ -40,6 +40,11 @@ Container::Container(const QJsonObject &json, QObject *parent)
             "Unknown"; // Default if not provided or invalid
     }
 
+    if (!json.contains("addedTime") || !json["addedTime"].isDouble()) {
+        throw std::invalid_argument("Invalid or missing 'addedTime'");
+    }
+    m_addedTime = json["addedTime"].isDouble();
+
     // Check and initialize containerNextDestinations from JSON array
     if (json.contains("containerNextDestinations") &&
         json["containerNextDestinations"].isArray()) {
@@ -307,6 +312,7 @@ QJsonObject Container::toJson() const
     jsonObject["containerID"] = m_containerID;
     jsonObject["containerSize"] = static_cast<int>(m_containerSize);
     jsonObject["containerCurrentLocation"] = m_containerCurrentLocation;
+    jsonObject["addedTime"] = m_addedTime;
 
     // Convert next destinations to QJsonArray
     QJsonArray nextDestinationsArray;

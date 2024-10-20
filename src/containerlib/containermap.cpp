@@ -114,6 +114,47 @@ void ContainerMap::addContainers(const QVector<Container*> &containers, double a
     }
 }
 
+void ContainerMap::addContainers(const QJsonObject &json, double addingTime) {
+    // Check if the JSON object contains the "containers" key and if it's an array
+    if (!json.contains("containers") || !json["containers"].isArray()) {
+        qWarning() << "Failed to add containers: 'containers' key missing or not an array";
+        return; // Invalid JSON input, exit function
+    }
+
+    // Retrieve the array of containers from the JSON object
+    QJsonArray containersArray = json["containers"].toArray();
+
+    // Loop over each item in the array
+    for (const QJsonValue &containerValue : containersArray) {
+        if (!containerValue.isObject()) {
+            qWarning() << "Failed to add container: item is not a JSON object";
+            continue; // Skip if the container is not a JSON object
+        }
+
+        QJsonObject containerObj = containerValue.toObject();
+
+        try {
+            // Use the existing JSON constructor to create a Container
+            Container *container = new Container(containerObj, this);
+
+            // Add the container to the ContainerMap
+            this->addContainer(container->getContainerID(), container, addingTime);
+        } catch (const std::invalid_argument &e) {
+            // Handle any exceptions thrown by the Container constructor
+            qWarning() << "Failed to add container with ID: "
+                       << containerObj["containerID"].toString()
+                       << ". Error: " << e.what();
+        } catch (const std::exception &e) {
+            // Catch all other exceptions
+            qWarning() << "Unexpected error while adding container with ID: "
+                       << containerObj["containerID"].toString()
+                       << ". Error: " << e.what();
+        }
+    }
+    emit containersChanged();
+}
+
+
 Container* ContainerMap::getContainer(const QString &id)
 {
     QMutexLocker locker(&m_mutex);

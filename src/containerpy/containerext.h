@@ -30,6 +30,7 @@ public:
 
     // Constructor and Destructor
     ContainerExt(const std::string &id, ContainerSize size);
+    ContainerExt(const QJsonObject &json);
     ~ContainerExt();
 
     // Copy Constructor and Assignment Operator
@@ -65,6 +66,8 @@ public:
     void setContainerMovementHistory(const std::vector<std::string> &history);
     void addMovementHistory(const std::string &history);
     bool removeMovementHistory(const std::string &history);
+
+    QJsonObject toJson() const;
 
     ContainerCore::Container *getBaseContainer();
 

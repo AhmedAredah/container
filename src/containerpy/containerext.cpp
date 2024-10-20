@@ -8,6 +8,11 @@ ContainerExt::ContainerExt(const std::string &id, ContainerSize size)
     mContainer = new ContainerCore::Container(QString::fromStdString(id), static_cast<ContainerCore::Container::ContainerSize>(size));
 }
 
+ContainerExt::ContainerExt(const QJsonObject &json)
+{
+    mContainer = new ContainerCore::Container(json, nullptr);
+}
+
 ContainerExt::~ContainerExt() {
     cleanup();
 }
@@ -191,6 +196,11 @@ void ContainerExt::addMovementHistory(const std::string &history) {
 
 bool ContainerExt::removeMovementHistory(const std::string &history) {
     return mContainer->removeMovementHistory(QString::fromStdString(history));
+}
+
+QJsonObject ContainerExt::toJson() const
+{
+    return mContainer->toJson();
 }
 
 ContainerCore::Container *ContainerExt::getBaseContainer()

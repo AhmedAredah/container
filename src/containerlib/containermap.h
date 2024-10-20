@@ -44,6 +44,8 @@ public:
     // Add a list of containers to the map
     void addContainers(const QVector<Container*> &containers, double addingTime = std::nan("notDefined"));
 
+    void addContainers(const QJsonObject &json, double addingTime = std::nan("notDefined"));
+
     // Get a container by ID
     Container* getContainer(const QString &id);
 
