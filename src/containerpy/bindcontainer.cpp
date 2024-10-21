@@ -144,8 +144,11 @@ PYBIND11_MODULE(ContainerPy, m) {
         .def("set_container_size", &ContainerExt::setContainerSize, py::arg("size"))
         .def("add_package", &ContainerExt::addPackage, py::arg("package"),
              "Add a package to the container.")
+        .def("get_packages", &ContainerExt::getPackages, py::return_value_policy::reference)
         .def("get_container_added_time", &ContainerExt::getContainerAddedTime, py::return_value_policy::reference)
         .def("set_container_added_time", &ContainerExt::setContainerAddedTime)
+        .def("get_container_leaving_time", &ContainerExt::getContainerLeavingTime, py::return_value_policy::reference)
+        .def("set_container_leaving_time", &ContainerExt::setContainerLeavingTime)
         .def("add_custom_variable",
              static_cast<void (ContainerExt::*)(ContainerExt::HaulerType, const std::string&, const std::string&)>(&ContainerExt::addCustomVariable),
              py::arg("hauler"), py::arg("key"), py::arg("value"),
@@ -223,34 +226,61 @@ PYBIND11_MODULE(ContainerPy, m) {
              }), py::arg("json_dict"),
              "Constructor that initializes a Package from a Python dictionary.")
         .def("add_container",
-            [](ContainerMapExt &self, ContainerExt* container, double addingTime) {
+            [](ContainerMapExt &self, ContainerExt* container, double addingTime, double leavingTime) {
                 // Check if addingTime is NaN and pass it to the C++ function accordingly
+                double mAT = 0;
+                double mLT = 0;
                 if (std::isnan(addingTime)) {
-                    self.addContainer(container, std::nan(""));
+                    mAT = std::nan("");
                 } else {
-                    self.addContainer(container, addingTime);
+                    mAT = addingTime;
                 }
-            }, py::arg("container"), py::arg("addingTime") = std::nan(""))
+
+                if (std::isnan(leavingTime)) {
+                    mLT = std::nan("");
+                } else {
+                    mLT = leavingTime;
+                }
+
+                self.addContainer(container, mAT, mLT);
+            }, py::arg("container"), py::arg("addingTime") = std::nan(""), py::arg("leavingTime") = std::nan(""))
         .def("add_containers",
-            [](ContainerMapExt &self, const std::vector<ContainerExt*> &containers, double addingTime) {
+            [](ContainerMapExt &self, const std::vector<ContainerExt*> &containers, double addingTime, double leavingTime) {
                 // Check if addingTime is NaN and pass it to the C++ function accordingly
+                double mAT = 0;
+                double mLT = 0;
                 if (std::isnan(addingTime)) {
-                    self.addContainers(containers, std::nan(""));
+                    mAT = std::nan("");
                 } else {
-                    self.addContainers(containers, addingTime);
+                    mAT = addingTime;
                 }
-            }, py::arg("containers"), py::arg("addingTime") = std::nan(""))
+
+                if (std::isnan(leavingTime)) {
+                    mLT = std::nan("");
+                } else {
+                    mLT = leavingTime;
+                }
+                self.addContainers(containers, mAT, mLT);
+            }, py::arg("containers"), py::arg("addingTime") = std::nan(""), py::arg("leavingTime") = std::nan(""))
         .def("add_containers_from_dict",
-            [](ContainerMapExt &self, const py::dict &pyDict, double addingTime) {
+            [](ContainerMapExt &self, const py::dict &pyDict, double addingTime, double leavingTime) {
                 // Convert the Python dictionary to a QJsonObject
                 QJsonObject jsonObj = PyDictToQJsonObject(pyDict);
+                double mAT = 0;
+                double mLT = 0;
                 if (std::isnan(addingTime)) {
-                    self.addContainers(jsonObj, std::nan(""));
+                    mAT = std::nan("");
                 } else {
-                    // Use the addContainers method that takes a QJsonObject
-                    self.addContainers(jsonObj, addingTime);
+                    mAT = addingTime;
                 }
-            }, py::arg("json_dict"), py::arg("addingTime") = std::nan(""),
+
+                if (std::isnan(leavingTime)) {
+                    mLT = std::nan("");
+                } else {
+                    mLT = leavingTime;
+                }
+                self.addContainers(jsonObj, mAT, mLT);
+            }, py::arg("json_dict"), py::arg("addingTime") = std::nan(""), py::arg("leavingTime") = std::nan(""),
             "Add multiple containers to the ContainerMap from a JSON-like Python dictionary.")
         .def("remove_container_by_id", &ContainerMapExt::removeContainerByID)
         .def("get_all_containers", &ContainerMapExt::getAllContainers, py::return_value_policy::reference)
