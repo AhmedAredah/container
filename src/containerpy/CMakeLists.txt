@@ -28,6 +28,10 @@ set(BINDING_FILES
 
 # Create a Python binding module
 pybind11_add_module(${PYTHON_LIB_NAME} MODULE ${BINDING_FILES})
+set_target_properties(${PYTHON_LIB_NAME} PROPERTIES 
+    OUTPUT_NAME "ContainerPy"  # Desired output name
+    SUFFIX ".pyd"              # Ensure the file ends with .pyd without extra suffixes
+)
 
 target_sources(${PYTHON_LIB_NAME}
 PRIVATE
@@ -71,13 +75,13 @@ add_custom_command(TARGET ${PYTHON_LIB_NAME} PRE_BUILD
 # Copy .pyd and .dll files to Python site-packages
 # -----------------------------------------------
 # Extract the path to the site-packages directory from the Python executable
-execute_process(COMMAND ${Python_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
-    OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
-    OUTPUT_STRIP_TRAILING_WHITESPACE
-)
+# execute_process(COMMAND ${Python_EXECUTABLE} -c "import sysconfig; print(sysconfig.get_paths()['purelib'])"
+#     OUTPUT_VARIABLE PYTHON_SITE_PACKAGES
+#     OUTPUT_STRIP_TRAILING_WHITESPACE
+# )
 
-# Ensure the container directory exists in site-packages
-file(MAKE_DIRECTORY ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME})
+# # Ensure the container directory exists in site-packages
+# file(MAKE_DIRECTORY ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME})
 
 # -----------------------------------------------
 # Automatically determine Qt's bin directory from QT_DIR using cmake_path()
@@ -111,32 +115,50 @@ else()
     set(QT_LIB_PREF "lib")
 endif()
 
-message(STATUS "Qt bin directory: ${QT_BIN_DIR}")
+# Define the install directory
+set(INSTALL_DIR "${CMAKE_BINARY_DIR}/installing/ContainerPy")
 
-# Full path to the setup.py script
-set(SETUP_PY_PATH "${CMAKE_CURRENT_SOURCE_DIR}/setup.py")
+# Ensure the install directory exists
+file(MAKE_DIRECTORY ${INSTALL_DIR})
 
-# Copy the .pyd and .dll files to the Python environment's site-packages directory
-add_custom_command(TARGET ${PYTHON_LIB_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:${PYTHON_LIB_NAME}> ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        $<TARGET_FILE:${Container_NAME}> ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Core${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Network${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Xml${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Sql${QT_LIB_EXT} ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_CURRENT_SOURCE_DIR}/ContainerPy.pyi ${PYTHON_SITE_PACKAGES}/${PYTHON_LIB_NAME}/
+# Install the Python extension module
+install(TARGETS ${PYTHON_LIB_NAME}
+    DESTINATION ${INSTALL_DIR}
+    COMPONENT Runtime
 )
 
-# Pass the site-packages directory as an environment variable to the setup.py
-add_custom_target(
-    install_python_module ALL
-    COMMAND ${Python_EXECUTABLE} ${SETUP_PY_PATH} install --prefix=${PYTHON_SITE_PACKAGES}
-    COMMENT "Installing Python module using setup.py into ${PYTHON_SITE_PACKAGES}"
+# Install the Container library
+install(TARGETS ${Container_NAME}
+    DESTINATION ${INSTALL_DIR}
+    COMPONENT Runtime
 )
+
+# Install the required Qt DLLs
+install(FILES
+    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Core${QT_LIB_EXT}
+    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Network${QT_LIB_EXT}
+    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Xml${QT_LIB_EXT}
+    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Sql${QT_LIB_EXT}
+    DESTINATION ${INSTALL_DIR}
+)
+
+# Install the type stub file and init file
+install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/ContainerPy.pyi
+    ${CMAKE_CURRENT_SOURCE_DIR}/__init__.py
+    DESTINATION ${INSTALL_DIR}
+)
+
+# Install the setup.py file to the parent directory
+install(FILES
+    ${CMAKE_CURRENT_SOURCE_DIR}/setup.py
+    DESTINATION ${CMAKE_BINARY_DIR}/installing
+)
+
+# Add a custom command to run setup.py after the install step
+install(CODE "
+    execute_process(
+        COMMAND ${Python_EXECUTABLE} ${CMAKE_BINARY_DIR}/installing/setup.py install
+        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/installing
+    )
+")
