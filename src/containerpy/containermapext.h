@@ -12,10 +12,10 @@ public:
     ContainerMapExt(const std::string &dbLocation);
     ContainerMapExt(const QJsonObject &json);
 
-    void addContainer(ContainerExt* container, double addingTime);
+    void addContainer(ContainerExt* container, double addingTime, double leavingTime);
 
-    void addContainers(const std::vector<ContainerExt*> &containers, double addingTime);
-    void addContainers(const QJsonObject &json, double addingTime);
+    void addContainers(const std::vector<ContainerExt*> &containers, double addingTime, double leavingTime);
+    void addContainers(const QJsonObject &json, double addingTime, double leavingTime);
 
     ContainerExt* getContainerByID(const std::string &id);
 

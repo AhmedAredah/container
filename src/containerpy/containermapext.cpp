@@ -18,25 +18,25 @@ ContainerMapExt::ContainerMapExt(const QJsonObject &json)
         mContainerMap.setIsRunningThroughPython(true);
 }
 
-void ContainerMapExt::addContainer(ContainerExt *container, double addingTime)
+void ContainerMapExt::addContainer(ContainerExt *container, double addingTime, double leavingTime)
 {
     if (container) {
-        mContainerMap.addContainer(QString::fromStdString(container->getContainerID()), container->getBaseContainer(), addingTime);
+        mContainerMap.addContainer(QString::fromStdString(container->getContainerID()), container->getBaseContainer(), addingTime, leavingTime);
     }
 }
 
-void ContainerMapExt::addContainers(const std::vector<ContainerExt *> &containers, double addingTime)
+void ContainerMapExt::addContainers(const std::vector<ContainerExt *> &containers, double addingTime, double leavingTime)
 {
     for (auto& c : containers) {
         if (c) {
-            mContainerMap.addContainer(QString::fromStdString(c->getContainerID()), c->getBaseContainer(), addingTime);
+            mContainerMap.addContainer(QString::fromStdString(c->getContainerID()), c->getBaseContainer(), addingTime, leavingTime);
         }
     }
 }
 
-void ContainerMapExt::addContainers(const QJsonObject &json, double addingTime)
+void ContainerMapExt::addContainers(const QJsonObject &json, double addingTime, double leavingTime)
 {
-    mContainerMap.addContainers(json, addingTime);
+    mContainerMap.addContainers(json, addingTime, leavingTime);
 }
 
 std::vector<ContainerExt*> ContainerMapExt::getContainersByAddedTime(double referenceTime, const std::string &condition) {
