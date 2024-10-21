@@ -44,6 +44,9 @@ public:
     double getContainerAddedTime() const;
     void setContainerAddedTime(double &time);
 
+    double getContainerLeavingTime() const;
+    void setContainerLeavingTime(double &time);
+
     ContainerSize getContainerSize() const;
     void setContainerSize(ContainerSize size);
 

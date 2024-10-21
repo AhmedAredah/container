@@ -68,6 +68,22 @@ void ContainerExt::setContainerAddedTime(double &time)
     }
 }
 
+double ContainerExt::getContainerLeavingTime() const
+{
+    if (mContainer) {
+        return mContainer->getContainerLeavingTime();
+    }
+
+    return std::nan("containerNotDefined");
+}
+
+void ContainerExt::setContainerLeavingTime(double &time)
+{
+    if (mContainer) {
+        mContainer->setContainerLeavingTime(time);
+    }
+}
+
 ContainerExt::ContainerSize ContainerExt::getContainerSize() const
 {
     return static_cast<ContainerExt::ContainerSize>(mContainer->getContainerSize());
