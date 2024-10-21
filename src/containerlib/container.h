@@ -18,6 +18,7 @@ class CONTAINER_EXPORT Container : public QObject
 
     Q_PROPERTY(QString containerID READ getContainerID WRITE setContainerID NOTIFY containerIDChanged FINAL)
     Q_PROPERTY(double addedTime READ getContainerAddedTime WRITE setContainerAddedTime NOTIFY containerAddedTimeChanged FINAL)
+    Q_PROPERTY(double leavingTime READ getContainerLeavingTime WRITE setContainerLeavingTime NOTIFY containerLeavingTimeChanged FINAL)
     Q_PROPERTY(ContainerSize containerSize READ getContainerSize WRITE setContainerSize NOTIFY containerSizeChanged FINAL)
     Q_PROPERTY(QVector<Package*> packages READ getPackages WRITE setPackages NOTIFY packagesChanged FINAL)
     Q_PROPERTY(QMap<HaulerType, QVariantMap> customVariables READ getCustomVariables WRITE setCustomVariables NOTIFY customVariablesChanged FINAL)
@@ -64,6 +65,9 @@ public:
     double getContainerAddedTime() const;
     void setContainerAddedTime(const double &time);
 
+    double getContainerLeavingTime() const;
+    void setContainerLeavingTime(const double &time);
+
     // Getter and Setter for containerSize
     ContainerSize getContainerSize() const;
     void setContainerSize(ContainerSize size);
@@ -107,6 +111,7 @@ public:
 signals:
     void containerIDChanged();
     void containerAddedTimeChanged();
+    void containerLeavingTimeChanged();
     void containerSizeChanged();
     void packagesChanged();
     void customVariablesChanged();
@@ -117,6 +122,7 @@ signals:
 private:
     QString m_containerID;
     double m_addedTime;
+    double m_leavingTime;
     ContainerSize m_containerSize;
     QVector<Package*> m_packages;
     QMap<HaulerType, QVariantMap> m_customVariables;

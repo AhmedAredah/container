@@ -148,6 +148,19 @@ void Container::setContainerAddedTime(const double &time)
     }
 }
 
+double Container::getContainerLeavingTime() const
+{
+    return m_leavingTime;
+}
+
+void Container::setContainerLeavingTime(const double &time)
+{
+    if (time != m_leavingTime) {
+        m_leavingTime = time;
+        emit containerLeavingTimeChanged();
+    }
+}
+
 Container::ContainerSize Container::getContainerSize() const {
     return m_containerSize;
 }
