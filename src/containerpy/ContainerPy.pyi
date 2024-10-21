@@ -144,6 +144,15 @@ class Container:
         """
         ...
 
+    def get_packages(self) -> List[Package]:
+        """
+        Gets packages list from the container.
+
+        Returns:
+            List[packages]: The packages list in the container.
+        """
+        ...
+
     def get_container_added_time(self):
         """
         Gets the container added time.
@@ -155,6 +164,23 @@ class Container:
     def set_container_added_time(self, time:float):
         """
         Sets the container added time.
+
+        Args:
+            time (float): the time.
+        """
+        ...
+
+    def get_container_leaving_time(self):
+        """
+        Gets the container leaving time.
+        
+        Returns:
+            float: the time.
+        """
+
+    def set_container_leaving_time(self, time:float):
+        """
+        Sets the container leaving time.
 
         Args:
             time (float): the time.
@@ -326,33 +352,37 @@ class ContainerMap:
         """
         ...
 
-    def add_container(self, container: Container, addingTime: float = float('nan')) -> None:
+    def add_container(self, container: Container, addingTime: float = float('nan'), leavingTime: float = float('nan')) -> None:
         """
         Adds a container to the map.
 
         Args:
             container (Container): The container to add.
             addingTime (float, optional): The time when the container was added. Defaults to NaN.
+            leavingTime (float, optional): The time when the container should leave the host. Defaults to NaN.
         """
         ...
 
-    def add_containers(self, containers: List[Container], addingTime: float = float('nan')) -> None:
+    def add_containers(self, containers: List[Container], addingTime: float = float('nan'), leavingTime: float = float('nan')) -> None:
         """
         Adds multiple containers to the map.
 
         Args:
             containers (List[Container]): A list of containers to add.
             addingTime (float, optional): The time when the containers were added. Defaults to NaN.
+            leavingTime (float, optional): The time when the container should leave the host. Defaults to NaN.
+
         """
         ...
 
-    def add_containers_from_dict(self, json_dict: Dict, addingTime: float = float('nan')) -> None:
+    def add_containers_from_dict(self, json_dict: Dict, addingTime: float = float('nan'), leavingTime: float = float('nan')) -> None:
         """
         Adds multiple containers using a JSON-like dictionary.
 
         Args:
             json_dict (Dict): A dictionary containing container details.
             addingTime (float, optional): The time when the containers were added. Defaults to NaN.
+            leavingTime (float, optional): The time when the container should leave the host. Defaults to NaN.
         """
         ...
 
