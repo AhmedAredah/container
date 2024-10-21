@@ -54,6 +54,7 @@ install(FILES
     container.h
     package.h
     Container_global.h
+	cache.h
     containermap.h
     DESTINATION include/Container
 )
