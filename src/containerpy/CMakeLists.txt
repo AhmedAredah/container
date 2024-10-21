@@ -30,7 +30,7 @@ set(BINDING_FILES
 pybind11_add_module(${PYTHON_LIB_NAME} MODULE ${BINDING_FILES})
 set_target_properties(${PYTHON_LIB_NAME} PROPERTIES 
     OUTPUT_NAME "ContainerPy"  # Desired output name
-    SUFFIX ".pyd"              # Ensure the file ends with .pyd without extra suffixes
+#    SUFFIX ".pyd"              # Ensure the file ends with .pyd without extra suffixes
 )
 
 target_sources(${PYTHON_LIB_NAME}
