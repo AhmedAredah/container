@@ -42,12 +42,12 @@ public:
     void setIsRunningThroughPython(bool isRunningThroughPython);
 
     // Add a container to the map
-    void addContainer(const QString &id, Container* container, double addingTime = std::nan("notDefined"));
+    void addContainer(const QString &id, Container* container, double addingTime = std::nan("notDefined"), double leavingTime = std::nan("notDefined"));
 
     // Add a list of containers to the map
-    void addContainers(const QVector<Container*> &containers, double addingTime = std::nan("notDefined"));
+    void addContainers(const QVector<Container*> &containers, double addingTime = std::nan("notDefined"), double leavingTime = std::nan("notDefined"));
 
-    void addContainers(const QJsonObject &json, double addingTime = std::nan("notDefined"));
+    void addContainers(const QJsonObject &json, double addingTime = std::nan("notDefined"), double leavingTime = std::nan("notDefined"));
 
     // Get a container by ID
     Container* getContainerByID(const QString &id);
@@ -120,7 +120,7 @@ private:
     void loadAdditionalContainerData(Container &container) const;
     Container* getContainer(const QString &id);
     void removeContainer(const QString &id);
-    void addContainerUtil(const QString &id, Container* container, double addingTime = std::nan("notDefined"));
+    void addContainerUtil(const QString &id, Container* container, double addingTime = std::nan("notDefined"), double leavingTime = std::nan("notDefined"));
     void clearUtil(bool enableClearDatabase = false, bool enableEmit = true);
 };
 }

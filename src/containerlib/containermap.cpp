@@ -101,10 +101,11 @@ void ContainerMap::setIsRunningThroughPython(bool isRunningThroughPython)
     m_cache.setDeleteWhileDestructing(!isRunningThroughPython);
 }
 
-void ContainerMap::addContainerUtil(const QString &id, Container* container, double addingTime)
+void ContainerMap::addContainerUtil(const QString &id, Container* container, double addingTime, double leavingTime)
 {
     if (m_useDatabase) {
         container->setContainerAddedTime(addingTime);
+        container->setContainerLeavingTime(leavingTime);
         m_cache.insert(id, container);
         saveContainerToDB(*container);
     } else {
@@ -114,23 +115,23 @@ void ContainerMap::addContainerUtil(const QString &id, Container* container, dou
     emit containersChanged();
 }
 
-void ContainerMap::addContainer(const QString &id, Container* container, double addingTime)
+void ContainerMap::addContainer(const QString &id, Container* container, double addingTime, double leavingTime)
 {
     QMutexLocker locker(&m_mutex);
 
-    addContainerUtil(id, container, addingTime);
+    addContainerUtil(id, container, addingTime, leavingTime);
 }
 
-void ContainerMap::addContainers(const QVector<Container*> &containers, double addingTime)
+void ContainerMap::addContainers(const QVector<Container*> &containers, double addingTime, double leavingTime)
 {
     for (Container* container : containers) {
         if (container) {
-            addContainerUtil(container->getContainerID(), container, addingTime);
+            addContainerUtil(container->getContainerID(), container, addingTime, leavingTime);
         }
     }
 }
 
-void ContainerMap::addContainers(const QJsonObject &json, double addingTime) {
+void ContainerMap::addContainers(const QJsonObject &json, double addingTime, double leavingTime) {
     // Check if the JSON object contains the "containers" key and if it's an array
     if (!json.contains("containers") || !json["containers"].isArray()) {
         qWarning() << "Failed to add containers: 'containers' key missing or not an array";
@@ -154,7 +155,7 @@ void ContainerMap::addContainers(const QJsonObject &json, double addingTime) {
             Container *container = new Container(containerObj, this);
 
             // Add the container to the ContainerMap
-            this->addContainerUtil(container->getContainerID(), container, addingTime);
+            this->addContainerUtil(container->getContainerID(), container, addingTime, leavingTime);
         } catch (const std::invalid_argument &e) {
             // Handle any exceptions thrown by the Container constructor
             qWarning() << "Failed to add container with ID: "
@@ -217,7 +218,7 @@ QMap<QString, Container*> ContainerMap::getAllContainers() const
 
     if (m_useDatabase) {
         // Query the database to retrieve all containers
-        QSqlQuery query("SELECT id, size, currentLocation, addedTime FROM Containers", m_db);
+        QSqlQuery query("SELECT id, size, currentLocation, addedTime, leavingTime FROM Containers", m_db);
         while (query.next()) {
             QString id = query.value("id").toString();
             int size = query.value("size").toInt();
@@ -228,6 +229,12 @@ QMap<QString, Container*> ContainerMap::getAllContainers() const
             } else {
                 addedTime = query.value("addedTime").toDouble();
             }
+            double leavingTime;
+            if (query.value("leavingTime").isNull()) {
+                leavingTime = std::nan(""); // Set to NaN if the database value is NULL
+            } else {
+                leavingTime = query.value("leavingTime").toDouble();
+            }
 
             // Create a new Container object from the retrieved data
             Container *container = new Container();
@@ -235,6 +242,7 @@ QMap<QString, Container*> ContainerMap::getAllContainers() const
             container->setContainerSize(static_cast<ContainerCore::Container::ContainerSize>(size));
             container->setContainerCurrentLocation(currentLocation);
             container->setContainerAddedTime(addedTime);
+            container->setContainerLeavingTime(leavingTime);
 
             // Retrieve related data (e.g., packages, custom variables, destinations, etc.)
             loadAdditionalContainerData(*container);
@@ -828,7 +836,8 @@ void ContainerMap::createTables()
                "id TEXT PRIMARY KEY, "
                "size INTEGER, "
                "currentLocation TEXT, "
-               "addedTime REAL);");
+               "addedTime REAL, "
+               "leavingTime REAL);");
 
     query.exec("CREATE TABLE IF NOT EXISTS NextDestinations ("
                "container_id TEXT, "
@@ -858,7 +867,7 @@ void ContainerMap::createTables()
 void ContainerMap::loadContainerFromDB(const QString &id)
 {
     QSqlQuery query(m_db);
-    query.prepare("SELECT size, currentLocation, addedTime FROM Containers "
+    query.prepare("SELECT size, currentLocation, addedTime, leavingTime FROM Containers "
                   "WHERE id = :id");
     query.bindValue(":id", id);
 
@@ -872,10 +881,17 @@ void ContainerMap::loadContainerFromDB(const QString &id)
         } else {
             addedTime = query.value(2).toDouble();
         }
+        double leavingTime;
+        if(query.value(3).isNull()) {
+            leavingTime = std::nan("");
+        } else {
+            leavingTime = query.value(3).toDouble();
+        }
 
         Container* container = new Container(id, size);
         container->setContainerCurrentLocation(currentLocation);
         container->setContainerAddedTime(addedTime);
+        container->setContainerLeavingTime(leavingTime);
 
         bool loadSuccessful = true;
 
@@ -978,8 +994,8 @@ void ContainerMap::saveContainerToDB(const Container &container)
     QSqlDatabase::database().transaction(); // Start transaction
 
     QSqlQuery query(m_db);
-    query.prepare("REPLACE INTO Containers (id, size, currentLocation, addedTime) "
-                  "VALUES (:id, :size, :currentLocation, :addedTime)");
+    query.prepare("REPLACE INTO Containers (id, size, currentLocation, addedTime, leavingTime) "
+                  "VALUES (:id, :size, :currentLocation, :addedTime, :leavingTime)");
     query.bindValue(":id", container.getContainerID());
     query.bindValue(":size", static_cast<int>(container.getContainerSize()));
     query.bindValue(":currentLocation", container.getContainerCurrentLocation());
@@ -988,6 +1004,12 @@ void ContainerMap::saveContainerToDB(const Container &container)
         query.bindValue(":addedTime", QVariant::fromValue<double>(std::nan("")));
     } else {
         query.bindValue(":addedTime", addedTime);
+    }
+    double leavingTime = container.getContainerLeavingTime();
+    if (std::isnan(leavingTime)) {
+        query.bindValue(":leavingTime", QVariant::fromValue<double>(std::nan("")));
+    } else {
+        query.bindValue(":leavingTime", leavingTime);
     }
 
     bool allSuccessful = query.exec();
