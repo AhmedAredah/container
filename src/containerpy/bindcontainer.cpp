@@ -262,6 +262,11 @@ PYBIND11_MODULE(ContainerPy, m) {
              py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
         .def("dequeue_containers_by_added_time", &ContainerMapExt::dequeueContainersByAddedTime,
              py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
+        .def("get_containers_by_leaving_time",
+             &ContainerMapExt::getContainersByLeavingTime,
+             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
+        .def("dequeue_containers_by_leaving_time", &ContainerMapExt::dequeueContainersByLeavingTime,
+             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
         .def("get_containers_by_next_destination", &ContainerMapExt::getContainersByNextDestination, py::return_value_policy::reference)
         .def("dequeue_containers_by_next_destination", &ContainerMapExt::dequeueContainerByNextDestination, py::return_value_policy::reference)
         .def("to_json", [](ContainerMapExt &self) {

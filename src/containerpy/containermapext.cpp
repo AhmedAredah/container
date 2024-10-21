@@ -52,6 +52,20 @@ std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByAddedTime(double
     return convertQVecContainerToSTDVecContainerExt(results);
 }
 
+std::vector<ContainerExt *> ContainerMapExt::getContainersByLeavingTime(double referenceTime, const std::string &condition)
+{
+    auto results = mContainerMap.getContainersByLeavingTime(referenceTime, QString::fromStdString(condition));
+
+    return convertQVecContainerToSTDVecContainerExt(results);
+}
+
+std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByLeavingTime(double referenceTime, const std::string &condition)
+{
+    auto results = mContainerMap.dequeueContainersByLeavingTime(referenceTime, QString::fromStdString(condition));
+
+    return convertQVecContainerToSTDVecContainerExt(results);
+}
+
 ContainerExt* ContainerMapExt::getContainerByID(const std::string &id)
 {
     ContainerCore::Container* baseContainer = mContainerMap.getContainerByID(QString::fromStdString(id));

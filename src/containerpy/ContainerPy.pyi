@@ -406,7 +406,7 @@ class ContainerMap:
 
     def get_containers_by_added_time(self, referenceTime: float, condition: str) -> List[Container]:
         """
-        Retrieves containers based on a time condition.
+        Retrieves containers based on an added time condition.
 
         Args:
             referenceTime (float): The time to compare.
@@ -419,7 +419,33 @@ class ContainerMap:
 
     def dequeue_containers_by_added_time(self, referenceTime: float, condition: str) -> List[Container]:
         """
-        Removes containers based on a time condition.
+        Removes containers based on an added time condition.
+
+        Args:
+            referenceTime (float): The time to compare.
+            condition (str): The condition to apply ("before" or "after").
+
+        Returns:
+            List[Container]: A list of removed containers.
+        """
+        ...
+
+    def get_containers_by_leaving_time(self, referenceTime: float, condition: str) -> List[Container]:
+        """
+        Retrieves containers based on a leaving condition.
+
+        Args:
+            referenceTime (float): The time to compare.
+            condition (str): The condition to apply ("before" or "after").
+
+        Returns:
+            List[Container]: A list of containers matching the criteria.
+        """
+        ...
+
+    def dequeue_containers_by_leaving_time(self, referenceTime: float, condition: str) -> List[Container]:
+        """
+        Removes containers based on a leaving time condition.
 
         Args:
             referenceTime (float): The time to compare.

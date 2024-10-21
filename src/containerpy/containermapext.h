@@ -31,6 +31,10 @@ public:
 
     std::vector<ContainerExt*> dequeueContainersByAddedTime(double referenceTime, const std::string &condition);
 
+    std::vector<ContainerExt*> getContainersByLeavingTime(double referenceTime, const std::string &condition);
+
+    std::vector<ContainerExt*> dequeueContainersByLeavingTime(double referenceTime, const std::string &condition);
+
     std::vector<ContainerExt*> getContainersByNextDestination(const std::string &destination);
 
     std::vector<ContainerExt*> dequeueContainerByNextDestination(const std::string &destination);
