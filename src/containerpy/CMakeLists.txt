@@ -155,10 +155,10 @@ install(FILES
     DESTINATION ${CMAKE_BINARY_DIR}/installing
 )
 
-# Add a custom command to run setup.py after the install step
-install(CODE "
-    execute_process(
-        COMMAND ${Python_EXECUTABLE} ${CMAKE_BINARY_DIR}/installing/setup.py install
-        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/installing
-    )
-")
+## Add a custom command to run setup.py after the install step
+#install(CODE "
+#    execute_process(
+#        COMMAND ${Python_EXECUTABLE} ${CMAKE_BINARY_DIR}/installing/setup.py install
+#        WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/installing
+#    )
+#")

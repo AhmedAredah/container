@@ -12,6 +12,22 @@ namespace ContainerCore {
 
 #define CONTAINER_CORE_CACHE_SIZE 200
 
+static QCoreApplication* coreAppInstance = nullptr;
+
+void deleteCoreAppInstance() {
+    delete coreAppInstance;  // Clean up memory
+    coreAppInstance = nullptr;
+}
+
+void ContainerMap::initializeQtCoreIfNeeded() {
+    if (!QCoreApplication::instance()) {
+        int argc = 0;
+        char **argv = nullptr;
+        coreAppInstance = new QCoreApplication(argc, argv);
+        std::atexit(deleteCoreAppInstance);
+    }
+}
+
 ContainerMap::ContainerMap(QObject *parent)
     : QObject(parent),
     m_cache(CONTAINER_CORE_CACHE_SIZE), // Set cache size to 200 containers
@@ -22,6 +38,9 @@ ContainerMap::ContainerMap(QObject *parent)
 ContainerMap::ContainerMap(const QString &dbLocation, QObject *parent)
     : QObject(parent), m_cache(CONTAINER_CORE_CACHE_SIZE), m_useDatabase(true)
 {
+    // Initialize QCoreApplication if needed
+    initializeQtCoreIfNeeded();
+
     if (!openDatabase(dbLocation)) {
         emit databaseErrorOccurred("Failed to open or create database.");
         m_useDatabase = false;
@@ -36,6 +55,10 @@ ContainerMap::ContainerMap(const QJsonObject &json, QObject *parent)
     // Check if databaseLocation exists in JSON
     if (json.contains("databaseLocation") &&
         json["databaseLocation"].isString()) {
+        
+        // Initialize QCoreApplication if needed
+        initializeQtCoreIfNeeded();
+        
         m_useDatabase = true;
         QString dbLocation = json["databaseLocation"].toString();
         if (!openDatabase(dbLocation)) {
@@ -886,6 +909,9 @@ void ContainerMap::deepCopy(const ContainerMap &other)
     m_useDatabase = other.m_useDatabase;
 
     if (m_useDatabase) {
+        // Initialize QCoreApplication if needed
+        initializeQtCoreIfNeeded();
+
         // Copy database reference
         m_db = other.m_db;
         // Copy cached containers

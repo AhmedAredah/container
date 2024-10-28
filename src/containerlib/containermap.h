@@ -15,6 +15,8 @@
 #include <QJsonArray>
 #include "cache.h"
 #include "container.h"
+#include <QCoreApplication>
+
 
 namespace ContainerCore {
 class CONTAINER_EXPORT ContainerMap : public QObject
@@ -128,6 +130,7 @@ private:
     void removeContainer(const QString &id);
     void addContainerUtil(const QString &id, Container* container, double addingTime = std::nan("notDefined"), double leavingTime = std::nan("notDefined"));
     void clearUtil(bool enableClearDatabase = false, bool enableEmit = true);
+    void initializeQtCoreIfNeeded();
 };
 }
 

@@ -18,7 +18,7 @@ mkdir build
 cd build
 
 # Set the Qt path
-QT_PATH="/home/ahmed/Qt/6.4.3/gcc_64/lib/cmake/Qt6"
+QT_PATH="/home/ahmed/Qt/6.8.0/gcc_64/lib/cmake/Qt6"
 PYTHON_PATH="/home/ahmed/miniconda3/envs/cargonetsim/bin/python"
 
 # Configure and build in Debug mode

@@ -115,6 +115,11 @@ Container &Container::operator=(const Container &other)
     return *this;
 }
 
+void Container::setIsRunningThroughPython(bool isRunningThroughPython)
+{
+    m_isRunningThroughPython = isRunningThroughPython;
+}
+
 // Destructor
 Container::~Container() {
     clear();
@@ -312,7 +317,9 @@ void Container::deepCopy(const Container &other)
 
 // Clear the package list and delete all packages
 void Container::clear() {
-    qDeleteAll(m_packages);
+    if (!m_isRunningThroughPython) {  // Python handles the pointers not us
+        qDeleteAll(m_packages);
+    }
     m_packages.clear();
     m_customVariables.clear();
     m_containerNextDestinations.clear();

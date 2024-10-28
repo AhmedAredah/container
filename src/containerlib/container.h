@@ -56,6 +56,8 @@ public:
     Container(const QJsonObject &json, QObject *parent = nullptr);
     Container(const Container &other);  // Copy constructor
     Container &operator=(const Container &other);  // Copy assignment operator
+    void setIsRunningThroughPython(bool isRunningThroughPython);
+
     ~Container();
 
     // Getter and Setter for containerID
@@ -129,6 +131,7 @@ private:
     QString m_containerCurrentLocation;
     QVector<QString> m_containerNextDestinations;
     QVector<QString> m_containerMovementHistory;
+    bool m_isRunningThroughPython = false;
 
     void deepCopy(const Container &other);  // Helper function to perform deep copy
 };
