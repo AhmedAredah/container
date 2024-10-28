@@ -77,7 +77,7 @@ cmake --build . --target Container
 ```
 
  2. Compiler Settings:
- - containerlib is compiled with Qt 6.4.3.
+ - containerlib is compiled with Qt 6.8.0. But any Qt version 6 would work.
  - The library supports both Debug and Release configurations.
 
  3. Qt Dependencies: Make sure Qt is installed and the environment variable QT_DIR is set correctly. For example:
@@ -121,7 +121,7 @@ The Python bindings can be installed using CMake:
 ```bash
 cmake --build . --target install_python_module
 ```
-This will copy the containerpy shared library and necessary Qt dependencies to the Python site-packages directory.
+This will copy the containerpy shared library and necessary Qt dependencies to the Python site-packages directory. You can however do the same thing manually. Copy the content of the installing folder to the site-package folder of your python environment. You need to make sure the Qt path is in your system path so that the python library recognizes it.
 
 ## Using containerpy
 After successful build and installation, containerpy can be used in Python scripts as follows:
