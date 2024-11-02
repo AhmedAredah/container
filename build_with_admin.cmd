@@ -19,11 +19,11 @@ mkdir build
 cd build
 
 :: Configure and build in Debug mode
-cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Debug
+cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Debug -DBUILD_PYTHON_PACKAGE=OFF
 cmake --build . --target INSTALL --config Debug
 
 :: Configure and build in Release mode
-cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release
+cmake .. -G "Visual Studio 16 2019" -A x64 -DCMAKE_BUILD_TYPE=Release -DBUILD_PYTHON_PACKAGE=OFF
 cmake --build . --target INSTALL --config Release
 
 echo Build process completed.
