@@ -105,8 +105,8 @@ elseif(APPLE)
     # macOS platform
     # Set the Qt bin directory
     set(QT_BIN_DIR "${QT_INSTALL_PREFIX}/lib")
-    set(QT_LIB_EXT ".dylib")
-    set(QT_LIB_PREF "")
+    set(QT_LIB_EXT "")  # .framework files do not use .dylib extensions
+    set(QT_LIB_PREF "") # Frameworks do not use the "lib" prefix
 else()
     # Linux and other platforms
     # Set the Qt bin directory
@@ -134,13 +134,23 @@ install(TARGETS ${Container_NAME}
 )
 
 # Install the required Qt DLLs
-install(FILES
-    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Core${QT_LIB_EXT}
-    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Network${QT_LIB_EXT}
-    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Xml${QT_LIB_EXT}
-    ${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Sql${QT_LIB_EXT}
-    DESTINATION ${INSTALL_DIR}
-)
+if(APPLE)
+    install(FILES
+        ${QT_BIN_DIR}/QtCore.framework/Versions/A/QtCore
+        ${QT_BIN_DIR}/QtNetwork.framework/Versions/A/QtNetwork
+        ${QT_BIN_DIR}/QtXml.framework/Versions/A/QtXml
+        ${QT_BIN_DIR}/QtSql.framework/Versions/A/QtSql
+        DESTINATION ${INSTALL_DIR}
+    )
+else()
+    install(FILES
+    	${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Core${QT_LIB_EXT}
+    	${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Network${QT_LIB_EXT}
+    	${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Xml${QT_LIB_EXT}
+    	${QT_BIN_DIR}/${QT_LIB_PREF}Qt6Sql${QT_LIB_EXT}
+    	DESTINATION ${INSTALL_DIR}
+    )
+endif()
 
 # Install the type stub file and init file
 install(FILES
