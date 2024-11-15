@@ -1,4 +1,5 @@
 from typing import List, Dict
+from enum import Enum
 
 class Package:
     """
@@ -518,3 +519,47 @@ class ContainerMap:
             Dict: A dictionary containing the ContainerMap information.
         """
         ...
+        
+class ContainerSize(Enum):
+    """
+    Enumeration representing various container sizes.
+
+    Attributes:
+        TwentyFT: Standard 20-foot container.
+        TwentyFT_HighCube: 20-foot high-cube container.
+        FourtyFT: Standard 40-foot container.
+        FourtyFT_HighCube: 40-foot high-cube container.
+        FortyFiveFT: Standard 45-foot container.
+        FortyFiveFT_HighCube: 45-foot high-cube container.
+        TenFT: Standard 10-foot container.
+        ThirtyFT: Standard 30-foot container.
+        FortyEightFT: Standard 48-foot container.
+        FiftyThreeFT: Standard 53-foot container.
+        SixtyFT: Standard 60-foot container.
+    """
+    TwentyFT = ...
+    TwentyFT_HighCube = ...
+    FourtyFT = ...
+    FourtyFT_HighCube = ...
+    FortyFiveFT = ...
+    FortyFiveFT_HighCube = ...
+    TenFT = ...
+    ThirtyFT = ...
+    FortyEightFT = ...
+    FiftyThreeFT = ...
+    SixtyFT = ...
+
+class HaulerType(Enum):
+    """
+    Enumeration representing different types of haulers.
+
+    Attributes:
+        Truck: Road transport vehicle.
+        Train: Rail transport vehicle.
+        WaterTransport: Water-based transport vessel.
+        AirTransport: Aircraft used for transport.
+    """
+    Truck = ...
+    Train = ...
+    WaterTransport = ...
+    AirTransport = ...
