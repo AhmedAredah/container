@@ -80,7 +80,18 @@ if(BUILD_PYTHON_PACKAGE)
     # Set the default Python executable location to be the Conda environment at
     ## "C:\ProgramData\Anaconda3\envs\containerModeler\python.exe"
     # Allow the user to override this value with -DPYTHON_EXECUTABLE=<path>
-    set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/containerModeler/python.exe" CACHE PATH "Path to the Python executable")
+    if(WIN32)
+        # Windows path
+        set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/cargonetsim/python.exe" CACHE PATH "Path to the Python executable")
+    elseif(APPLE)
+        # macOS path
+        set(PYTHON_EXECUTABLE "/opt/anaconda3/envs/cargonetsim/bin/python" CACHE PATH "Path to the Python executable")
+    elseif(UNIX)
+        # Linux path
+        set(PYTHON_EXECUTABLE "/home/ahmed/miniconda3/envs/cargonetsim/bin/python" CACHE PATH "Path to the Python executable")
+    else()
+        message(FATAL_ERROR "Unsupported operating system")
+    endif()
 
     # Set Python_EXECUTABLE variable to override the default one found by CMake
     set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
