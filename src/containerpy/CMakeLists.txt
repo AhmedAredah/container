@@ -56,7 +56,9 @@ target_link_libraries(${PYTHON_LIB_NAME} PRIVATE Container)
 target_link_libraries(${PYTHON_LIB_NAME} PRIVATE Qt6::Core Qt6::Concurrent Qt6::Network Qt6::Xml Qt6::Sql)
 
 # Use the Python::Python target from find_package
-target_link_libraries(${PYTHON_LIB_NAME} PRIVATE Python::Python)
+if(NOT APPLE)
+    target_link_libraries(${PYTHON_LIB_NAME} PRIVATE Python::Python)
+endif()
 
 # Ensure Container project is built first
 add_dependencies(${PYTHON_LIB_NAME} ${Container_NAME})
