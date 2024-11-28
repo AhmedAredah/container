@@ -71,7 +71,7 @@ endif()
 # -------------------------------------------------------
 
 # Add option to choose between building python package or not
-option(BUILD_PYTHON_PACKAGE "Build the Python bindings for the project" ON)
+option(BUILD_PYTHON_PACKAGE "Build the Python bindings for the project" OFF)
 set(BUILD_PYTHON_PACKAGE ${BUILD_PYTHON_PACKAGE} CACHE BOOL "Build the Python bindings for the project" FORCE)
 
 # If Python bindings are to be built, set the necessary variables
@@ -81,13 +81,11 @@ if(BUILD_PYTHON_PACKAGE)
     ## "C:\ProgramData\Anaconda3\envs\containerModeler\python.exe"
     # Allow the user to override this value with -DPYTHON_EXECUTABLE=<path>
     if(WIN32)
-        # Windows path
-        set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/cargonetsim/python.exe" CACHE PATH "Path to the Python executable")
+        set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/containerModeler/python.exe" CACHE PATH "Path to the Python executable")
     elseif(APPLE)
         # macOS path
         set(PYTHON_EXECUTABLE "/opt/anaconda3/envs/cargonetsim/bin/python" CACHE PATH "Path to the Python executable")
     elseif(UNIX)
-        # Linux path
         set(PYTHON_EXECUTABLE "/home/ahmed/miniconda3/envs/cargonetsim/bin/python" CACHE PATH "Path to the Python executable")
     else()
         message(FATAL_ERROR "Unsupported operating system")

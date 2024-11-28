@@ -13,7 +13,7 @@
 #include <QCache>
 #include <QJsonObject>
 #include <QJsonArray>
-#include "cache.h"
+#include "containercache.h"
 #include "container.h"
 #include <QCoreApplication>
 
@@ -109,7 +109,7 @@ signals:
 private:
     QMap<QString, Container*> m_containers;
     QSqlDatabase m_db;
-    Cache<Container> m_cache;
+    ContainerCore::ContainerCache<Container> m_cache;
     mutable QMutex m_mutex;
 
     bool m_useDatabase;

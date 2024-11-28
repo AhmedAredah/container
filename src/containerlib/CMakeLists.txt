@@ -14,7 +14,7 @@ add_library(${Container_NAME} SHARED
   Container_global.h
   package.h package.cpp
   container.h container.cpp
-  cache.h
+  containercache.h
   containermap.h containermap.cpp
 )
 
@@ -54,7 +54,7 @@ install(FILES
     container.h
     package.h
     Container_global.h
-	cache.h
+	containercache.h
     containermap.h
     DESTINATION include/Container
 )

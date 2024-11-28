@@ -1,15 +1,17 @@
-#ifndef CACHE_H
-#define CACHE_H
+#ifndef CONTAINERCACHE_H
+#define CONTAINERCACHE_H
 
 #include <QMap>
 #include <QList>
 #include <QString>
 
+namespace ContainerCore{
+
 template <typename T>
-class Cache {
+class ContainerCache {
 public:
-    explicit Cache(int maxSize = 200, bool deletePntrsWhileDestructing = true);
-    ~Cache();
+    explicit ContainerCache(int maxSize = 200, bool deletePntrsWhileDestructing = true);
+    ~ContainerCache();
 
     void insert(const QString &key, T *object);
     T* object(const QString &key);               // Non-const version
@@ -30,17 +32,17 @@ private:
 
 // Implementation of the template class
 template <typename T>
-Cache<T>::Cache(int maxSize, bool deletePntrsWhileDestructing)
+ContainerCache<T>::ContainerCache(int maxSize, bool deletePntrsWhileDestructing)
     : m_maxSize(maxSize), m_deletePointerWhenDesctructing(deletePntrsWhileDestructing)
 {}
 
 template <typename T>
-Cache<T>::~Cache() {
+ContainerCache<T>::~ContainerCache() {
     clear(m_deletePointerWhenDesctructing);
 }
 
 template <typename T>
-void Cache<T>::insert(const QString &key, T *object) {
+void ContainerCache<T>::insert(const QString &key, T *object) {
     if (m_cache.contains(key)) {
         m_cache.remove(key);
     } else if (m_cache.size() >= m_maxSize) {
@@ -52,7 +54,7 @@ void Cache<T>::insert(const QString &key, T *object) {
 }
 
 template <typename T>
-T *Cache<T>::object(const QString &key) {
+T *ContainerCache<T>::object(const QString &key) {
     if (m_cache.contains(key)) {
         m_accessOrder.removeOne(key);
         m_accessOrder.prepend(key);
@@ -62,13 +64,13 @@ T *Cache<T>::object(const QString &key) {
 }
 
 template<typename T>
-T* Cache<T>::object(const QString &key) const {
+T* ContainerCache<T>::object(const QString &key) const {
     auto it = m_cache.constFind(key);
     return (it != m_cache.cend()) ? const_cast<T*>(it.value()) : nullptr;
 }
 
 template <typename T>
-void Cache<T>::remove(const QString &key, bool deleteObject) {
+void ContainerCache<T>::remove(const QString &key, bool deleteObject) {
     if (m_cache.contains(key)) {
         if (deleteObject) {
             delete m_cache.value(key);
@@ -79,7 +81,7 @@ void Cache<T>::remove(const QString &key, bool deleteObject) {
 }
 
 template <typename T>
-void Cache<T>::clear(bool deleteObjects) {
+void ContainerCache<T>::clear(bool deleteObjects) {
     if (deleteObjects) {
         qDeleteAll(m_cache);
     }
@@ -88,24 +90,24 @@ void Cache<T>::clear(bool deleteObjects) {
 }
 
 template <typename T>
-bool Cache<T>::contains(const QString &key) const {
+bool ContainerCache<T>::contains(const QString &key) const {
     return m_cache.contains(key);
 }
 
 template <typename T>
-int Cache<T>::size() const {
+int ContainerCache<T>::size() const {
     return m_cache.size();
 }
 
 template <typename T>
-QList<QString> Cache<T>::keys() const {
+QList<QString> ContainerCache<T>::keys() const {
     return m_cache.keys();
 }
 
 template<typename T>
-void Cache<T>::setDeleteWhileDestructing(bool dlt)
+void ContainerCache<T>::setDeleteWhileDestructing(bool dlt)
 {
     m_deletePointerWhenDesctructing = dlt;
 }
-
-#endif // CACHE_H
+}
+#endif // CONTAINERCACHE_H
