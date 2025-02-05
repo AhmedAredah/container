@@ -47,7 +47,8 @@ public:
         truck,
         train,
         waterTransport,
-        airTransport
+        airTransport,
+        noHauler
     };
     Q_ENUM(HaulerType)
 
