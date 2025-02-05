@@ -460,7 +460,7 @@ QJsonObject ContainerMap::toJson() const
     return jsonObject;
 }
 
-QVector<Container *> ContainerMap::getContainersByAddedTime(double referenceTime, const QString &condition)
+QVector<Container *> ContainerMap::getContainersByAddedTime(const QString &condition, double referenceTime)
 {
     QMutexLocker locker(&m_mutex); // Ensure thread safety
     QVector<Container*> result;
@@ -543,7 +543,7 @@ QVector<Container *> ContainerMap::getContainersByAddedTime(double referenceTime
     return result;
 }
 
-QVector<Container *> ContainerMap::dequeueContainersByAddedTime(double referenceTime, const QString &condition)
+QVector<Container *> ContainerMap::dequeueContainersByAddedTime(const QString &condition, double referenceTime)
 {
     QMutexLocker locker(&m_mutex); // Ensure thread safety
     QVector<Container*> matchingContainers;
@@ -637,7 +637,87 @@ QVector<Container *> ContainerMap::dequeueContainersByAddedTime(double reference
     return matchingContainers;
 }
 
-QVector<Container *> ContainerMap::getContainersByLeavingTime(double referenceTime, const QString &condition)
+qsizetype ContainerMap::countContainersByAddedTime(const QString &condition, double referenceTime)
+{
+    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    qsizetype count = 0;
+
+    QString normalizedCondition = condition.trimmed().toLower(); // Convert to lowercase and trim
+
+    // Check for valid conditions
+    if (normalizedCondition != ">" && normalizedCondition != ">=" &&
+        normalizedCondition != "<" && normalizedCondition != "<=" &&
+        normalizedCondition != "=" && normalizedCondition != "!=") {
+        qDebug() << "Invalid condition: must be one of '>', '>=', '<', '<=', '=', or '!='.";
+        return count;
+    }
+
+    if (m_useDatabase) {
+        // Query the database for containers by addedTime
+        QSqlQuery query(m_db);
+        QString queryString;
+
+        // Prepare query string based on condition
+        if (normalizedCondition == ">") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE addedTime > :referenceTime";
+        } else if (normalizedCondition == ">=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE addedTime >= :referenceTime";
+        } else if (normalizedCondition == "<") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE addedTime < :referenceTime";
+        } else if (normalizedCondition == "<=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE addedTime <= :referenceTime";
+        } else if (normalizedCondition == "=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE addedTime = :referenceTime";
+        } else if (normalizedCondition == "!=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE addedTime != :referenceTime";
+        }
+
+        query.prepare(queryString);
+        query.bindValue(":referenceTime", referenceTime);
+
+        if (query.exec()) {
+            if (query.next()) {
+                count = query.value(0).toInt();
+            }
+        } else {
+            emit databaseErrorOccurred("Failed to count containers by added time.");
+            qDebug() << "Failed to count containers by added time:" << query.lastError().text();
+        }
+    } else {
+        // Count containers in the in-memory map based on addedTime
+        for (auto it = m_containers.begin(); it != m_containers.end(); ++it) {
+            Container* container = it.value();
+            if (container) {
+                double addedTime = container->getContainerAddedTime();
+                bool conditionMet = false;
+
+                // Perform the comparison based on the condition
+                if (normalizedCondition == ">" && addedTime > referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == ">=" && addedTime >= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<" && addedTime < referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<=" && addedTime <= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "=" && addedTime == referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "!=" && addedTime != referenceTime) {
+                    conditionMet = true;
+                }
+
+                if (conditionMet) {
+                    ++count;
+                }
+            }
+        }
+    }
+
+    return count;
+}
+
+
+QVector<Container *> ContainerMap::getContainersByLeavingTime(const QString &condition, double referenceTime)
 {
     QMutexLocker locker(&m_mutex); // Ensure thread safety
     QVector<Container*> result;
@@ -720,7 +800,87 @@ QVector<Container *> ContainerMap::getContainersByLeavingTime(double referenceTi
     return result;
 }
 
-QVector<Container *> ContainerMap::dequeueContainersByLeavingTime(double referenceTime, const QString &condition)
+qsizetype ContainerMap::countContainersByLeavingTime(const QString &condition, double referenceTime)
+{
+    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    qsizetype count = 0;
+
+    QString normalizedCondition = condition.trimmed().toLower(); // Convert to lowercase and trim
+
+    // Check for valid conditions
+    if (normalizedCondition != ">" && normalizedCondition != ">=" &&
+        normalizedCondition != "<" && normalizedCondition != "<=" &&
+        normalizedCondition != "=" && normalizedCondition != "!=") {
+        qDebug() << "Invalid condition: must be one of '>', '>=', '<', '<=', '=', or '!='.";
+        return count;
+    }
+
+    if (m_useDatabase) {
+        // If using a database, query based on leavingTime
+        QSqlQuery query(m_db);
+        QString queryString;
+
+        // Prepare query string based on condition
+        if (normalizedCondition == ">") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE leavingTime > :referenceTime";
+        } else if (normalizedCondition == ">=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE leavingTime >= :referenceTime";
+        } else if (normalizedCondition == "<") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE leavingTime < :referenceTime";
+        } else if (normalizedCondition == "<=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE leavingTime <= :referenceTime";
+        } else if (normalizedCondition == "=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE leavingTime = :referenceTime";
+        } else if (normalizedCondition == "!=") {
+            queryString = "SELECT COUNT(*) FROM Containers WHERE leavingTime != :referenceTime";
+        }
+
+        query.prepare(queryString);
+        query.bindValue(":referenceTime", referenceTime);
+
+        if (query.exec()) {
+            if (query.next()) {
+                count = query.value(0).toInt();
+            }
+        } else {
+            emit databaseErrorOccurred("Failed to count containers by leaving time.");
+            qDebug() << "Failed to count containers by leaving time:" << query.lastError().text();
+        }
+    } else {
+        // If not using a database, filter and count in-memory containers
+        for (auto it = m_containers.begin(); it != m_containers.end(); ++it) {
+            Container* container = it.value();
+            if (container) {
+                double leavingTime = container->getContainerLeavingTime();
+                bool conditionMet = false;
+
+                // Perform the comparison based on the condition
+                if (normalizedCondition == ">" && leavingTime > referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == ">=" && leavingTime >= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<" && leavingTime < referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "<=" && leavingTime <= referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "=" && leavingTime == referenceTime) {
+                    conditionMet = true;
+                } else if (normalizedCondition == "!=" && leavingTime != referenceTime) {
+                    conditionMet = true;
+                }
+
+                if (conditionMet) {
+                    ++count;
+                }
+            }
+        }
+    }
+
+    return count;
+}
+
+
+QVector<Container *> ContainerMap::dequeueContainersByLeavingTime(const QString &condition, double referenceTime)
 {
     QMutexLocker locker(&m_mutex); // Ensure thread safety
     QVector<Container*> matchingContainers;
@@ -903,6 +1063,79 @@ QVector<Container *> ContainerMap::dequeueContainersByNextDestination(const QStr
     emit containersChanged();
     return matchingContainers;
 }
+
+qsizetype ContainerMap::countContainersByNextDestination(const QString &destination)
+{
+    QMutexLocker locker(&m_mutex); // Ensure thread safety
+    qsizetype count = 0;
+
+    if (m_useDatabase) {
+        // Count containers in the database
+        QSqlQuery query(m_db);
+        query.prepare("SELECT COUNT(*) FROM Containers WHERE id IN ("
+                      "SELECT container_id FROM NextDestinations WHERE "
+                      "destination = :destination)");
+        query.bindValue(":destination", destination);
+
+        if (query.exec()) {
+            if (query.next()) {
+                count = query.value(0).toInt();
+            }
+        } else {
+            emit databaseErrorOccurred("Failed to count containers by next destination.");
+            qDebug() << "Failed to count containers by next destination:" << query.lastError().text();
+        }
+    } else {
+        // Count containers in the in-memory map
+        for (auto it = m_containers.begin(); it != m_containers.end(); ++it) {
+            Container* container = it.value();
+            if (container && container->getContainerNextDestinations().contains(destination)) {
+                ++count;
+            }
+        }
+    }
+
+    return count;
+}
+
+QVector<Container *>
+ContainerMap::loadContainersFromJson(const QJsonObject &json, QObject *parent)
+{
+    QVector<Container*> containers;
+
+    // Check if the JSON contains a "containers" array
+    if (!json.contains("containers") || !json["containers"].isArray()) {
+        qWarning() << "Failed to load containers: 'containers' key missing "
+                      "or not an array";
+        return containers;
+    }
+
+    QJsonArray containersArray = json["containers"].toArray();
+
+    // Iterate over each container in the array
+    for (const QJsonValue &containerValue : containersArray) {
+        if (!containerValue.isObject()) {
+            qWarning() << "Skipping invalid container entry "
+                          "(not a JSON object)";
+            continue;
+        }
+
+        QJsonObject containerObj = containerValue.toObject();
+
+        try {
+            // Create a new Container from the JSON object
+            Container *container = new Container(containerObj, parent);
+            containers.append(container);
+        } catch (const std::invalid_argument &e) {
+            qWarning() << "Invalid container data:" << e.what();
+        } catch (const std::exception &e) {
+            qWarning() << "Error creating container:" << e.what();
+        }
+    }
+
+    return containers;
+}
+
 
 void ContainerMap::deepCopy(const ContainerMap &other)
 {
