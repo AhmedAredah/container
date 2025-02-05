@@ -39,31 +39,39 @@ void ContainerMapExt::addContainers(const QJsonObject &json, double addingTime, 
     mContainerMap.addContainers(json, addingTime, leavingTime);
 }
 
-std::vector<ContainerExt*> ContainerMapExt::getContainersByAddedTime(double referenceTime, const std::string &condition) {
-    auto results = mContainerMap.getContainersByAddedTime(referenceTime, QString::fromStdString(condition));
+std::vector<ContainerExt*> ContainerMapExt::getContainersByAddedTime(const std::string &condition, double referenceTime) {
+    auto results = mContainerMap.getContainersByAddedTime(QString::fromStdString(condition), referenceTime);
 
     return convertQVecContainerToSTDVecContainerExt(results);
 }
 
-std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByAddedTime(double referenceTime, const std::string &condition)
+std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByAddedTime(const std::string &condition, double referenceTime)
 {
-    auto results = mContainerMap.dequeueContainersByAddedTime(referenceTime, QString::fromStdString(condition));
+    auto results = mContainerMap.dequeueContainersByAddedTime(QString::fromStdString(condition), referenceTime);
 
     return convertQVecContainerToSTDVecContainerExt(results);
 }
 
-std::vector<ContainerExt *> ContainerMapExt::getContainersByLeavingTime(double referenceTime, const std::string &condition)
+std::size_t ContainerMapExt::countContainersByAddedTime(const std::string &condition, double referenceTime) {
+    return mContainerMap.countContainersByAddedTime(QString::fromStdString(condition), referenceTime);
+}
+
+std::vector<ContainerExt *> ContainerMapExt::getContainersByLeavingTime(const std::string &condition, double referenceTime)
 {
-    auto results = mContainerMap.getContainersByLeavingTime(referenceTime, QString::fromStdString(condition));
+    auto results = mContainerMap.getContainersByLeavingTime(QString::fromStdString(condition), referenceTime);
 
     return convertQVecContainerToSTDVecContainerExt(results);
 }
 
-std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByLeavingTime(double referenceTime, const std::string &condition)
+std::vector<ContainerExt *> ContainerMapExt::dequeueContainersByLeavingTime(const std::string &condition, double referenceTime)
 {
-    auto results = mContainerMap.dequeueContainersByLeavingTime(referenceTime, QString::fromStdString(condition));
+    auto results = mContainerMap.dequeueContainersByLeavingTime(QString::fromStdString(condition), referenceTime);
 
     return convertQVecContainerToSTDVecContainerExt(results);
+}
+
+std::size_t ContainerMapExt::countContainersByLeavingTime(const std::string &condition, double referenceTime) {
+    return mContainerMap.countContainersByLeavingTime(QString::fromStdString(condition), referenceTime);
 }
 
 ContainerExt* ContainerMapExt::getContainerByID(const std::string &id)
@@ -90,7 +98,7 @@ std::vector<ContainerExt *> ContainerMapExt::getLatestContainers() {
     return convertQVecContainerToSTDVecContainerExt(qtMapVec);
 }
 
-int ContainerMapExt::size() const
+std::size_t ContainerMapExt::size() const
 {
     return mContainerMap.size();
 }
@@ -109,13 +117,24 @@ std::vector<ContainerExt*> ContainerMapExt::dequeueContainerByNextDestination(co
     return convertQVecContainerToSTDVecContainerExt(results);
 }
 
+std::vector<ContainerExt *> ContainerMapExt::loadContainersFromJson(const QJsonObject &json)
+{
+    auto results = ContainerCore::ContainerMap::loadContainersFromJson(json);
+
+    return convertQVecContainerToSTDVecContainerExt(results);
+}
+
+std::size_t ContainerMapExt::countContainersByNextDestination(const std::string &destination) {
+    return mContainerMap.countContainersByNextDestination(QString::fromStdString(destination));
+}
+
 QJsonObject ContainerMapExt::toJson() const
 {
     return mContainerMap.toJson();
 }
 
 // Helper method to safely cast ContainerCore::Container* to ContainerExt*
-ContainerExt* ContainerMapExt::toContainerExt(ContainerCore::Container* base) const
+ContainerExt* ContainerMapExt::toContainerExt(ContainerCore::Container* base)
 {
     return new ContainerExt(base);
 }
