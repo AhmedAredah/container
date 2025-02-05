@@ -435,55 +435,82 @@ class ContainerMap:
         """
         ...
 
-    def get_containers_by_added_time(self, referenceTime: float, condition: str) -> List[Container]:
+    def get_containers_by_added_time(self, condition: str, referenceTime: float) -> List[Container]:
         """
         Retrieves containers based on an added time condition.
 
         Args:
+            condition (str): The condition to apply (">", "<", "<=", ">=", "=", "!=").
             referenceTime (float): The time to compare.
-            condition (str): The condition to apply ("before" or "after").
 
         Returns:
             List[Container]: A list of containers matching the criteria.
         """
         ...
 
-    def dequeue_containers_by_added_time(self, referenceTime: float, condition: str) -> List[Container]:
+    def dequeue_containers_by_added_time(self, condition: str, referenceTime: float) -> List[Container]:
         """
         Removes containers based on an added time condition.
 
         Args:
+            condition (str): The condition to apply (">", "<", "<=", ">=", "=", "!=").
             referenceTime (float): The time to compare.
-            condition (str): The condition to apply ("before" or "after").
 
         Returns:
             List[Container]: A list of removed containers.
         """
         ...
+        
+    def count_containers_by_added_time(self, condition: str, referenceTime: float) -> int:
+        """
+        Counts the number of containers based on an added time condition.
 
-    def get_containers_by_leaving_time(self, referenceTime: float, condition: str) -> List[Container]:
+        Args:
+            condition (str): The condition to apply (">", "<", "<=", ">=", "=", "!=").
+            referenceTime (float): The time to compare.
+
+        Returns:
+            int: The count of containers matching the criteria.
+        """
+        ...
+
+
+    def get_containers_by_leaving_time(self, condition: str, referenceTime: float) -> List[Container]:
         """
         Retrieves containers based on a leaving condition.
 
         Args:
+            condition (str): The condition to apply (">", "<", "<=", ">=", "=", "!=").
             referenceTime (float): The time to compare.
-            condition (str): The condition to apply ("before" or "after").
 
         Returns:
             List[Container]: A list of containers matching the criteria.
         """
         ...
 
-    def dequeue_containers_by_leaving_time(self, referenceTime: float, condition: str) -> List[Container]:
+    def dequeue_containers_by_leaving_time(self, condition: str, referenceTime: float) -> List[Container]:
         """
         Removes containers based on a leaving time condition.
 
         Args:
+            condition (str): The condition to apply (">", "<", "<=", ">=", "=", "!=").
             referenceTime (float): The time to compare.
-            condition (str): The condition to apply ("before" or "after").
 
         Returns:
             List[Container]: A list of removed containers.
+        """
+        ...
+        
+    def count_containers_by_leaving_time(self, condition: str, referenceTime: float) -> int:
+        """
+        Counts the number of containers based on a leaving time condition.
+
+        Args:
+            condition (str): The condition to apply (">", "<", "<=", ">=", "=", "!=").
+            referenceTime (float): The time to compare.
+
+        Returns:
+            int: The count of containers matching the criteria.
         """
         ...
 
@@ -508,6 +535,40 @@ class ContainerMap:
 
         Returns:
             List[Container]: A list of removed containers.
+        """
+        ...
+        
+    def count_containers_by_next_destination(self, destination: str) -> int:
+       """
+       Counts the number of containers heading to a specified destination.
+
+       Args:
+            destination (str): The destination to search for.
+
+       Returns:
+            int: The count of containers heading to the destination.
+       """
+       ...
+
+    @staticmethod
+    def load_containers_from_json(json_dict: Dict) -> List[Container]:
+        """
+        Loads containers from a JSON-like dictionary and returns them as a list.
+
+        Args:
+            json_dict (Dict): A dictionary containing container data under the 'containers' key.
+
+        Returns:
+            List[Container]: A list of Container objects created from the JSON data.
+
+        Example:
+            containers = ContainerMap.load_containers_from_json({
+                "containers": [
+                    {"containerID": "C1", "containerSize": 20, "addedTime": 1620000000},
+                    {"containerID": "C2", "containerSize": 40, "addedTime": 1620003600}
+                ]
+            })
+            container_map.add_containers(containers)
         """
         ...
 
@@ -558,8 +619,10 @@ class HaulerType(Enum):
         Train: Rail transport vehicle.
         WaterTransport: Water-based transport vessel.
         AirTransport: Aircraft used for transport.
+        NoHauler: No hauler associated transport.
     """
     Truck = ...
     Train = ...
     WaterTransport = ...
     AirTransport = ...
+    NoHauler = ...
