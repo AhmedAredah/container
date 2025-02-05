@@ -25,19 +25,27 @@ public:
 
     std::vector<ContainerExt *> getLatestContainers();
 
-    int size() const;
+    std::size_t size() const;
 
-    std::vector<ContainerExt*> getContainersByAddedTime(double referenceTime, const std::string &condition);
+    std::vector<ContainerExt*> getContainersByAddedTime(const std::string &condition, double referenceTime);
 
-    std::vector<ContainerExt*> dequeueContainersByAddedTime(double referenceTime, const std::string &condition);
+    std::vector<ContainerExt*> dequeueContainersByAddedTime(const std::string &condition, double referenceTime);
 
-    std::vector<ContainerExt*> getContainersByLeavingTime(double referenceTime, const std::string &condition);
+    std::size_t countContainersByAddedTime(const std::string &condition, double referenceTime);
 
-    std::vector<ContainerExt*> dequeueContainersByLeavingTime(double referenceTime, const std::string &condition);
+    std::vector<ContainerExt*> getContainersByLeavingTime(const std::string &condition, double referenceTime);
+
+    std::vector<ContainerExt*> dequeueContainersByLeavingTime(const std::string &condition, double referenceTime);
+
+    std::size_t countContainersByLeavingTime(const std::string &condition, double referenceTime);
 
     std::vector<ContainerExt*> getContainersByNextDestination(const std::string &destination);
 
     std::vector<ContainerExt*> dequeueContainerByNextDestination(const std::string &destination);
+
+    static std::vector<ContainerExt*> loadContainersFromJson(const QJsonObject &json);
+
+    std::size_t countContainersByNextDestination(const std::string &destination);
 
     QJsonObject toJson() const;
 
@@ -45,10 +53,10 @@ private:
     ContainerCore::ContainerMap mContainerMap;
 
     // Helper method to safely cast ContainerCore::Container* to ContainerExt*
-    ContainerExt* toContainerExt(ContainerCore::Container* base) const;
+    static ContainerExt* toContainerExt(ContainerCore::Container* base);
 
-    std::vector<ContainerExt*> convertQVecContainerToSTDVecContainerExt(QVector<ContainerCore::Container*> original);
-    std::map<std::string, ContainerExt *> convertQMapToSTDMapContainerExt(QMap<QString, ContainerCore::Container*> original);
+    static std::vector<ContainerExt*> convertQVecContainerToSTDVecContainerExt(QVector<ContainerCore::Container*> original);
+    static std::map<std::string, ContainerExt *> convertQMapToSTDMapContainerExt(QMap<QString, ContainerCore::Container*> original);
 };
 
 #endif // CONTAINERMAPEXT_H
