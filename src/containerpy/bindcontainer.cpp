@@ -216,6 +216,7 @@ PYBIND11_MODULE(ContainerPy, m) {
         .value("Train", ContainerExt::HaulerType::train)
         .value("WaterTransport", ContainerExt::HaulerType::waterTransport)
         .value("AirTransport", ContainerExt::HaulerType::airTransport)
+        .value("NoHauler", ContainerExt::HaulerType::noHauler)
         .export_values();
 
     py::class_<ContainerMapExt>(m, "ContainerMap")
@@ -289,19 +290,33 @@ PYBIND11_MODULE(ContainerPy, m) {
         .def("size", &ContainerMapExt::size, py::return_value_policy::copy)
         .def("get_containers_by_added_time",
              &ContainerMapExt::getContainersByAddedTime,
-             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
+             py::arg("condition"), py::arg("referenceTime"), py::return_value_policy::reference)
         .def("dequeue_containers_by_added_time", &ContainerMapExt::dequeueContainersByAddedTime,
-             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
+             py::arg("condition"), py::arg("referenceTime"), py::return_value_policy::reference)
+        .def("count_containers_by_added_time", &ContainerMapExt::countContainersByAddedTime,
+             py::arg("condition"), py::arg("referenceTime"))
         .def("get_containers_by_leaving_time",
              &ContainerMapExt::getContainersByLeavingTime,
-             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
+             py::arg("condition"), py::arg("referenceTime"), py::return_value_policy::reference)
         .def("dequeue_containers_by_leaving_time", &ContainerMapExt::dequeueContainersByLeavingTime,
-             py::arg("referenceTime"), py::arg("condition"), py::return_value_policy::reference)
+             py::arg("condition"), py::arg("referenceTime"), py::return_value_policy::reference)
+        .def("count_containers_by_leaving_time", &ContainerMapExt::countContainersByLeavingTime,
+             py::arg("condition"), py::arg("referenceTime"))
         .def("get_containers_by_next_destination", &ContainerMapExt::getContainersByNextDestination, py::return_value_policy::reference)
         .def("dequeue_containers_by_next_destination", &ContainerMapExt::dequeueContainerByNextDestination, py::return_value_policy::reference)
+        .def("count_containers_by_next_destination", &ContainerMapExt::countContainersByNextDestination)
         .def("to_json", [](ContainerMapExt &self) {
                 return ContainerMapExtToPyDict(self);
-            }, "Extract ContainerMap information to a Python dictionary");
+            }, "Extract ContainerMap information to a Python dictionary")
+        .def_static("load_containers_from_json",
+                    [](const py::dict &pyDict) {
+                        QJsonObject jsonObj = PyDictToQJsonObject(pyDict);
+                        return ContainerMapExt::loadContainersFromJson(jsonObj);
+                    },
+                    py::arg("json_dict"),
+                    py::return_value_policy::reference,
+                    "Load containers from a JSON dictionary and return them as a list of Container objects"
+                    );
 
 
 }
