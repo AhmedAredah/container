@@ -25,7 +25,8 @@ public:
         truck,
         train,
         waterTransport,
-        airTransport
+        airTransport,
+        noHauler
     };
 
     // Constructor and Destructor
