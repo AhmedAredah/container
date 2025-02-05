@@ -71,7 +71,7 @@ endif()
 # -------------------------------------------------------
 
 # Add option to choose between building python package or not
-option(BUILD_PYTHON_PACKAGE "Build the Python bindings for the project" OFF)
+option(BUILD_PYTHON_PACKAGE "Build the Python bindings for the project" ON)
 set(BUILD_PYTHON_PACKAGE ${BUILD_PYTHON_PACKAGE} CACHE BOOL "Build the Python bindings for the project" FORCE)
 
 # If Python bindings are to be built, set the necessary variables
