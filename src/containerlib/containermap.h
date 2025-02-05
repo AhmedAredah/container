@@ -73,16 +73,22 @@ public:
     QJsonObject toJson() const;
 
     // Get containers by the given added time and a condition.
-    QVector<Container *> getContainersByAddedTime(double referenceTime, const QString &condition);
+    QVector<Container *> getContainersByAddedTime(const QString &condition, double referenceTime);
 
     // Dequeues containers by the given added time and a condition.
-    QVector<Container *> dequeueContainersByAddedTime(double referenceTime, const QString &condition);
+    QVector<Container *> dequeueContainersByAddedTime(const QString &condition, double referenceTime);
+
+    // count containers by the given added time and a condition
+    qsizetype countContainersByAddedTime(const QString &condition, double referenceTime);
 
     // Get containers by the given leaving time and a condition
-    QVector<Container *> getContainersByLeavingTime(double referenceTime, const QString &condition);
+    QVector<Container *> getContainersByLeavingTime(const QString &condition, double referenceTime);
 
     // Dequeues containers by the given leaving time and a condition
-    QVector<Container *> dequeueContainersByLeavingTime(double referenceTime, const QString &condition);
+    QVector<Container *> dequeueContainersByLeavingTime(const QString &condition, double referenceTime);
+
+    // count containers by the given leaving time and a condition
+    qsizetype countContainersByLeavingTime(const QString &condition, double referenceTime);
 
     // Get containers by the given next destination
     QVector<Container*> getContainersByNextDestination(const QString &destination);
@@ -90,6 +96,11 @@ public:
     // Dequeues containers by the given next destination
     QVector<Container*> dequeueContainersByNextDestination(const QString &destination);
 
+    // Count containers by the given next destination
+    qsizetype countContainersByNextDestination(const QString &destination);
+
+    // Load containers from json object to a QVector
+    static QVector<Container*> loadContainersFromJson(const QJsonObject &json, QObject *parent = nullptr);
 
 
     // Serialization and deserialization
