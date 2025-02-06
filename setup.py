@@ -2,6 +2,8 @@ import os
 import sys
 import platform
 import subprocess
+import glob
+import shutil
 from setuptools import setup, Extension, find_packages
 from setuptools.command.build_ext import build_ext
 from setuptools.command.install import install
@@ -68,53 +70,46 @@ class CMakeBuild(build_ext):
 		cmake_build_dir = os.path.join(ext.sourcedir, "build")
 		os.makedirs(cmake_build_dir, exist_ok=True)
 
-		# Ensure the output will be in the proper directory for the wheel
+		final_lib_dir = os.path.join(extdir, 'containerpy')
+		os.makedirs(final_lib_dir, exist_ok=True)
+
+		print(f"Building extension in {cmake_build_dir}")
+		print(f"Final library directory: {final_lib_dir}")
+
 		cmake_args = [
-			f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={os.path.join(extdir, 'containerpy')}",
+			f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={final_lib_dir}",
 			f"-DPYTHON_EXECUTABLE={sys.executable}",
 			f"-DCMAKE_BUILD_TYPE={cfg}",
 			"-DBUILD_SHARED_LIBS=ON",
 			"-DBUILD_PYTHON_BINDINGS=ON",
 			"-DBUILD_TESTING=OFF",
 		]
+  
+		# Set RPATH settings for non-Windows platforms
+		if platform.system() != "Windows":
+			cmake_args += [
+				"-DCMAKE_INSTALL_RPATH=$ORIGIN",
+				"-DCMAKE_BUILD_WITH_INSTALL_RPATH=ON",
+				"-DCMAKE_SKIP_BUILD_RPATH=OFF",
+			]
 
-		# Check if Ninja is available
-		try:
-			subprocess.check_call(['ninja', '--version'])
-			cmake_args += ["-GNinja"]
-		except (subprocess.CalledProcessError, FileNotFoundError):
-			# Fallback to default generator if Ninja is not available
-			pass
-
-		# Platform-specific configurations
 		if platform.system() == "Windows":
-			cmake_args += [
-				"-DCMAKE_C_COMPILER=cl",
-				"-DCMAKE_CXX_COMPILER=cl",
-			]
-			if sys.maxsize > 2**32:
-				cmake_args += ["-A", "x64"]
+			cmake_args += ["-GNinja", "-DCMAKE_C_COMPILER=cl", "-DCMAKE_CXX_COMPILER=cl"]
 		else:
-			cmake_args += [
-				"-DCMAKE_C_COMPILER=gcc",
-				"-DCMAKE_CXX_COMPILER=g++",
-			]
-
-		# Remove CMakeCache.txt if it exists
-		cache_file = os.path.join(cmake_build_dir, "CMakeCache.txt")
-		if os.path.exists(cache_file):
-			os.remove(cache_file)
-
-		subprocess.check_call(
-			["cmake", ext.sourcedir] + cmake_args, 
-			cwd=cmake_build_dir
-		)
+			cmake_args += ["-GNinja", "-DCMAKE_C_COMPILER=gcc", "-DCMAKE_CXX_COMPILER=g++"]
 
 		build_args = ["--config", cfg]
-		subprocess.check_call(
-			["cmake", "--build", "."] + build_args,
-			cwd=cmake_build_dir
-		)
+
+		subprocess.check_call(["cmake", ext.sourcedir] + cmake_args, cwd=cmake_build_dir)
+		subprocess.check_call(["cmake", "--build", "."] + build_args, cwd=cmake_build_dir)
+
+		# Copy the libraries
+		lib_ext = '.dll' if platform.system() == 'Windows' else '.so' if platform.system() == 'Linux' else '.dylib'
+		
+		for lib_name in ['libContainer', f'ContainerPy.cpython-{sys.version_info.major}{sys.version_info.minor}-*']:
+			for lib_file in glob.glob(os.path.join(cmake_build_dir, f'**/*{lib_name}*{lib_ext}'), recursive=True):
+				print(f"Copying {lib_file} to {final_lib_dir}")
+				shutil.copy2(lib_file, final_lib_dir)
   
 class InstallPlatlib(install):
 	def finalize_options(self):
