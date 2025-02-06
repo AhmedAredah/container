@@ -8,6 +8,16 @@ set(LIB_NAME ${Container_NAME})
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Sql)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Sql)
 
+set(HEADERS
+    ../../include//containerLib/package.h
+    ../../include//containerLib/container.h
+    ../../include//containerLib/containermap.h
+)
+
+# Ensure that MOC is enabled for Qt classes
+qt6_wrap_cpp(MOC_SOURCES ${HEADERS})
+
+
 # Define source files with proper paths
 set(SOURCES
     package.cpp
@@ -15,6 +25,7 @@ set(SOURCES
     containermap.cpp
 )
 
+set(SOURCES ${SOURCES} ${MOC_SOURCES})
 # Create library target
 add_library(${LIB_NAME} ${SOURCES})
 
@@ -36,17 +47,15 @@ generate_export_header(${LIB_NAME}
 
 # Set target properties
 set_target_properties(${LIB_NAME} PROPERTIES
+    CXX_VISIBILITY_PRESET default
+    VISIBILITY_INLINES_HIDDEN ON
     VERSION ${PROJECT_VERSION}
     SOVERSION ${PROJECT_VERSION_MAJOR}
     DEBUG_POSTFIX "d"
     RUNTIME_OUTPUT_DIRECTORY_DEBUG ${CMAKE_BINARY_DIR}/Debug
     RUNTIME_OUTPUT_DIRECTORY_RELEASE ${CMAKE_BINARY_DIR}/Release
     EXPORT_NAME ${LIB_NAME}
-)
 
-set_target_properties(${LIB_NAME} PROPERTIES
-    CXX_VISIBILITY_PRESET default
-    VISIBILITY_INLINES_HIDDEN OFF
 )
 
 # Set include directories
@@ -65,12 +74,27 @@ target_link_libraries(${LIB_NAME}
 )
 
 # Set compile definitions
+# target_compile_definitions(${LIB_NAME}
+#     PRIVATE
+#         CONTAINER_LIBRARY
+#         QT_NO_CAST_FROM_ASCII
+#         QT_NO_CAST_TO_ASCII
+# )
+
+# Ensure symbols are correctly exported
 target_compile_definitions(${LIB_NAME}
     PRIVATE
-        CONTAINER_LIBRARY
-        QT_NO_CAST_FROM_ASCII
-        QT_NO_CAST_TO_ASCII
+        CONTAINER_LIBRARY  # Defines CONTAINER_LIBRARY for internal use
+    PUBLIC
+        CONTAINER_EXPORT   # Ensures symbols marked as CONTAINER_EXPORT are visible
 )
+
+# Ensure symbols are exported correctly
+set_target_properties(${LIB_NAME} PROPERTIES
+    CXX_VISIBILITY_PRESET default  # Ensures vtables and public symbols are exported
+    VISIBILITY_INLINES_HIDDEN OFF
+)
+
 
 # Installation configuration
 include(GNUInstallDirs)
