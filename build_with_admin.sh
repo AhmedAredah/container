@@ -192,14 +192,15 @@ fi
 # Build Python wheel
 if [[ "$BUILD_WHL" == "y" ]]; then
     echo "Building Python wheel file..."
-    $PYTHON_PATH -m build
+    $PYTHON_PATH setup.py build_ext --inplace
+    $PYTHON_PATH setup.py bdist_wheel
     check_command "Python wheel build"
 fi
 
 # Install Python wheel
 if [[ "$INSTALL_WHL" == "y" ]]; then
     echo "Installing Python wheel file to the current Python environment..."
-    $PYTHON_PATH -m pip install dist/containerpy*.whl
+    $PYTHON_PATH -m pip install dist/containerpy*.whl --force-reinstall
     check_command "Python wheel install"
 fi
 
