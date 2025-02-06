@@ -9,6 +9,10 @@ find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Sql)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Sql)
 find_package(pybind11 REQUIRED CONFIG HINTS ${PYBIND11_HINTS_PATH})
 
+# After the find_package commands, add:
+message(STATUS "Python Library Dirs: ${Python_LIBRARY_DIRS}")
+message(STATUS "Python Libraries: ${Python_LIBRARIES}")
+
 # Define source files
 set(BINDING_FILES
     bindcontainer.cpp
@@ -37,6 +41,22 @@ set_target_properties(${PYTHON_LIB_NAME} PROPERTIES
 set_target_properties(${PYTHON_LIB_NAME} PROPERTIES
     POSITION_INDEPENDENT_CODE ON
 )
+
+# Add proper RPATH settings
+if(UNIX)
+    set_target_properties(${PYTHON_LIB_NAME} PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "$ORIGIN:${Python_LIBRARY_DIRS}"
+        INSTALL_RPATH_USE_LINK_PATH TRUE
+        SKIP_BUILD_RPATH FALSE
+    )
+
+    set_target_properties(Container PROPERTIES
+        BUILD_WITH_INSTALL_RPATH TRUE
+        INSTALL_RPATH "$ORIGIN"
+        INSTALL_RPATH_USE_LINK_PATH FALSE
+    )
+endif()
 
 # Add include directories
 target_include_directories(${PYTHON_LIB_NAME} PRIVATE
@@ -124,12 +144,6 @@ install(FILES
     "${CMAKE_SOURCE_DIR}/python/containerpy/__init__.py"
     DESTINATION ${INSTALL_DIR}
 )
-
-# Install setup.py to parent directory
-# install(FILES
-#     "${CMAKE_SOURCE_DIR}/python/setup.py"
-#     DESTINATION ${CMAKE_SOURCE_DIR}
-# )
 
 # Print configuration summary
 message(STATUS "")
