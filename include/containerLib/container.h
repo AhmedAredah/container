@@ -59,7 +59,7 @@ public:
     Container &operator=(const Container &other);  // Copy assignment operator
     void setIsRunningThroughPython(bool isRunningThroughPython);
 
-    ~Container();
+    virtual ~Container();
 
     // Getter and Setter for containerID
     QString getContainerID() const;

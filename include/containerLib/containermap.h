@@ -33,7 +33,7 @@ public:
     ContainerMap(const QJsonObject &json, QObject *parent = nullptr);
 
 
-    ~ContainerMap();
+    virtual ~ContainerMap();
 
     // Copy constructor
     ContainerMap(const ContainerMap &other);

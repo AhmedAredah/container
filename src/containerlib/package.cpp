@@ -12,6 +12,8 @@ Package::Package(const QString id, QObject *parent)
 
 }
 
+Package::~Package() = default;
+
 Package::Package(const QJsonObject &json, QObject *parent)
     : QObject(parent)
 {
