@@ -1,7 +1,7 @@
 #ifndef PACKAGEEXT_H
 #define PACKAGEEXT_H
 
-#include "package.h"
+#include "containerLib/package.h"
 
 class PackageExt
 {

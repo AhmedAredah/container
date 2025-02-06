@@ -1,6 +1,6 @@
 #include "containerext.h"
-#include "container.h"
-#include "package.h"
+#include "containerLib/container.h"
+#include "containerLib/package.h"
 #include "packageext.h"
 
 ContainerExt::ContainerExt(const std::string &id, ContainerSize size)

@@ -1,4 +1,4 @@
-#include "package.h"
+#include "containerLib/package.h"
 #include <QDebug>
 
 namespace ContainerCore {
@@ -16,7 +16,7 @@ Package::Package(const QJsonObject &json, QObject *parent)
     : QObject(parent)
 {
     // Initialize packageID
-    m_packageID = json["packageID"].toString();
+    m_packageID = json[QStringLiteral("packageID")].toString();
 }
 
 // Copy constructor
@@ -50,7 +50,7 @@ void Package::setPackageID(const QString &id) {
 QJsonObject Package::toJson() const
 {
     QJsonObject jsonObject;
-    jsonObject["packageID"] = m_packageID;
+    jsonObject[QStringLiteral("packageID")] = m_packageID;
     return jsonObject;
 }
 

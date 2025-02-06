@@ -16,6 +16,8 @@ class CONTAINER_EXPORT Package : public QObject
 
 public:
     explicit Package(QObject *parent = nullptr);
+    virtual ~Package() = default;
+
 
     Package(const Package &other);  // Copy constructor
     Package(const QString id, QObject *parent = nullptr);

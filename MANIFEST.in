@@ -1,0 +1,20 @@
+# Include C++ source files
+recursive-include src *.cpp *.h
+recursive-include include *.h
+
+# Include CMake files
+recursive-include src CMakeLists.txt *.cmake.in
+recursive-include cmake *.cmake.in
+include CMakeLists.txt
+
+# Include Python package files
+recursive-include python *.py *.pyi
+
+# Include compiled libraries
+recursive-include build *.so
+recursive-include build *.pyd
+recursive-include build *.dylib
+
+# Documentation and license
+include README.md
+include LICENSE

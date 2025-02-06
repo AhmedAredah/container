@@ -28,9 +28,6 @@ The Container project consists of two main subprojects:
  - setuptools (pip install setuptools)
  - Qt Components:
    - Core
-   - Concurrent
-   - Xml
-   - Network
    - Sql
 
 ## Project Structure

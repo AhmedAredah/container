@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# Find Qt dependencies
+find_dependency(Qt6 COMPONENTS Core Sql)
+
+# Include targets
+include("${CMAKE_CURRENT_LIST_DIR}/ContainerTargets.cmake")
+
+# Set variables for imported targets
+set_and_check(CONTAINER_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set_and_check(CONTAINER_LIB_DIR "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
+check_required_components(Container)

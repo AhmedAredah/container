@@ -1,0 +1,47 @@
+[build-system]
+requires = [
+	"setuptools>=42", 
+	"wheel", 
+	"cmake>=3.24", 
+	"ninja", 
+	"pybind11>=2.10.0", 
+	"PyQt6>=6.0",
+	"pip"
+	]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "containerpy"
+keywords = ["container management", "simulation", "logistics"]
+classifiers=[
+	'Operating System :: POSIX :: Linux',
+	'Operating System :: Microsoft :: Windows',
+	'Operating System :: MacOS',
+	"Development Status :: 4 - Beta",
+	"Intended Audience :: Developers",
+	"Topic :: Software Development :: Libraries :: Python Modules",
+	"License :: OSI Approved :: AGPL-v3 License",
+	"Programming Language :: Python :: 3",
+	"Programming Language :: Python :: 3.8",
+	"Programming Language :: Python :: 3.9",
+	"Programming Language :: Python :: 3.10",
+	"Programming Language :: Python :: 3.11",
+	"Programming Language :: C++",
+	"Operating System :: OS Independent",
+	"Environment :: Console",
+]
+version = "0.1.0"
+description = "Container management library"
+authors = [{name = "Ahmed Aredah", email = "AhmedAredah@vt.edu"}]
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+	"PyQt6>=6.0",
+	"pybind11>=2.10.0"
+]
+
+[project.urls]
+Homepage = "https://github.com/AhmedAredah/container"
+Documentation = "https://container.readthedocs.io/"
+Repository = "https://github.com/AhmedAredah/container.git"

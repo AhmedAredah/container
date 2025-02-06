@@ -1,148 +1,191 @@
-# min required cmake version
+# Minimum required CMake version
 cmake_minimum_required(VERSION 3.24)
 
-# Define the project name (Container) and
-# the programming language used (CXX for C++)
-set(Container_VERSION "0.0.1" CACHE STRING "Project version" FORCE)
-set(Container_NAME "Container" CACHE STRING "Project name" FORCE)
-set(Container_VENDOR "(C) 2022-2023 Virginia Tech Transportation Institute - Center for Sustainable Mobility." CACHE STRING "Project vendor" FORCE)
-# Get the current date and time
-string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S")
-# Set the BUILD_DATE variable
+# Project definition with metadata
+project(Container
+    VERSION 0.1.0
+    DESCRIPTION "Container management library with Python bindings"
+    HOMEPAGE_URL "https://github.com/yourusername/container"
+    LANGUAGES CXX
+)
+
+# Set the library name
+set(Container_NAME Container)
+
+# Set vendor info
+set(Container_VENDOR "(C) 2022-2025 Virginia Tech Transportation Institute" CACHE STRING "Project vendor")
+string(TIMESTAMP BUILD_DATE "%Y-%m-%d %H:%M:%S" UTC)
 set(BUILD_DATE ${BUILD_DATE} CACHE STRING "Project build time" FORCE)
 
-# Extract major, minor, and patch version from Container_VERSION
-string(REPLACE "." ";" VERSION_LIST ${Container_VERSION})
-list(GET VERSION_LIST 0 Container_VERSION_MAJOR)
-list(GET VERSION_LIST 1 Container_VERSION_MINOR)
-list(GET VERSION_LIST 2 Container_VERSION_PATCH)
+# Extract version components
+set(Container_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
+set(Container_VERSION_MINOR ${PROJECT_VERSION_MINOR})
+set(Container_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 
-project(${Container_NAME} VERSION ${Container_VERSION} LANGUAGES CXX)
+# Global options
+option(BUILD_SHARED_LIBS "Build shared libraries" ON)
+option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
+option(BUILD_TESTING "Build tests" OFF)
+option(BUILD_DOCS "Build documentation" OFF)
 
-# Set a default build type if none was specified
+# Set default build type if not specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build." FORCE)
-    # Set the possible values of build type for cmake-gui
-    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS 
+        "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif()
 
-# Compiler settings
-# Set the C++20 standard to be used for compiling
+# Global compiler settings
 set(CMAKE_CXX_STANDARD 23)
-# Ensure that the selected C++ standard is a
-# requirement for the compiler
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-# Enable Qt's Automatic User Interface Compiler (UIC)
-set(CMAKE_AUTOUIC ON)
-# Enable Qt's Meta-Object Compiler (MOC) which allows
-# the use of Qt features such as signals and slots
-set(CMAKE_AUTOMOC ON)
-# Enable Qt's Resource Compiler (RCC) for compiling
-# resource files into binary format
-set(CMAKE_AUTORCC ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
+# Set output directories
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
+set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 # Platform-specific compiler flags
 if(MSVC)
-    # MSVC-specific flags
     add_compile_options(/W4 /MP)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(/Od /Zi)
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    else()
         add_compile_options(/O2)
     endif()
 else()
-    # GCC/Clang-specific flags
-    add_compile_options(-Wall)
+    add_compile_options(-Wall -Wextra -Wpedantic)
     if(CMAKE_BUILD_TYPE STREQUAL "Debug")
         add_compile_options(-O0 -g)
-    elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+    else()
         add_compile_options(-O3)
     endif()
 endif()
 
-# Add definitions based on build type
-if (CMAKE_BUILD_TYPE STREQUAL "Release")
-    add_definitions(-DQT_NO_DEBUG_OUTPUT)
-endif()
+# Find Qt
+find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Sql)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Sql)
 
-# -------------------------------------------------------
-# ------------------ OPTIONAL PARAMATERS ----------------
-# -------------------------------------------------------
-
-# Add option to choose between building python package or not
-option(BUILD_PYTHON_PACKAGE "Build the Python bindings for the project" ON)
-set(BUILD_PYTHON_PACKAGE ${BUILD_PYTHON_PACKAGE} CACHE BOOL "Build the Python bindings for the project" FORCE)
-
-# If Python bindings are to be built, set the necessary variables
-if(BUILD_PYTHON_PACKAGE)
-
-    # Set the default Python executable location to be the Conda environment at
-    ## "C:\ProgramData\Anaconda3\envs\containerModeler\python.exe"
-    # Allow the user to override this value with -DPYTHON_EXECUTABLE=<path>
+# Python bindings configuration
+if(BUILD_PYTHON_BINDINGS)
+    # Set default Python executable location based on platform
     if(WIN32)
-        set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/containerModeler/python.exe" CACHE PATH "Path to the Python executable")
+        set(PYTHON_EXECUTABLE "C:/ProgramData/Anaconda3/envs/containerModeler/python.exe"
+            CACHE PATH "Path to Python executable")
     elseif(APPLE)
-        # macOS path
-        set(PYTHON_EXECUTABLE "/opt/anaconda3/envs/cargonetsim/bin/python" CACHE PATH "Path to the Python executable")
+        set(PYTHON_EXECUTABLE "/opt/anaconda3/envs/cargonetsim/bin/python"
+            CACHE PATH "Path to Python executable")
     elseif(UNIX)
-        set(PYTHON_EXECUTABLE "/home/ahmed/miniconda3/envs/cargonetsim/bin/python" CACHE PATH "Path to the Python executable")
-    else()
-        message(FATAL_ERROR "Unsupported operating system")
+        set(PYTHON_EXECUTABLE "/home/ahmed/miniconda3/envs/cargonetsim/bin/python"
+            CACHE PATH "Path to Python executable")
     endif()
 
-    # Set Python_EXECUTABLE variable to override the default one found by CMake
+    # Verify Python executable
+    if(NOT EXISTS ${PYTHON_EXECUTABLE})
+        message(FATAL_ERROR "Python executable not found at: ${PYTHON_EXECUTABLE}")
+    endif()
+    
     set(Python_EXECUTABLE ${PYTHON_EXECUTABLE})
-
-    # Make sure the user provides or confirms the Python path
-    if(NOT EXISTS ${Python_EXECUTABLE})
-        message(FATAL_ERROR "The specified Python executable does not exist: ${Python_EXECUTABLE}")
-    else()
-        message(STATUS "Using Python from: ${Python_EXECUTABLE}")
-    endif()
-
-    # Attempt to find the pybind11 CMake directory using the Python executable
+    
+    # Find pybind11
     execute_process(
         COMMAND ${Python_EXECUTABLE} -c "import pybind11; print(pybind11.get_cmake_dir())"
         OUTPUT_VARIABLE PYBIND11_CMAKE_DIR
         ERROR_VARIABLE PYBIND11_ERROR
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
-
-    # Check if the command succeeded (i.e., pybind11 is installed)
-    if (PYBIND11_CMAKE_DIR)
-        # Cache the PYBIND11_HINTS_PATH variable for later use
-        set(PYBIND11_HINTS_PATH ${PYBIND11_CMAKE_DIR} CACHE STRING "Path to the pybind11 CMake configuration directory")
-        message(STATUS "pybind11 is installed. CMake directory: ${PYBIND11_HINTS_PATH}")
+    
+    if(PYBIND11_CMAKE_DIR)
+        set(PYBIND11_HINTS_PATH ${PYBIND11_CMAKE_DIR}
+            CACHE STRING "Path to pybind11 CMake configuration")
     else()
-        message(FATAL_ERROR "pybind11 is not installed or could not be found. Error: ${PYBIND11_ERROR}")
+        message(FATAL_ERROR "pybind11 not found: ${PYBIND11_ERROR}")
     endif()
-
-    # Attempt to find if setuptools is installed using the Python executable
-    execute_process(
-        COMMAND ${Python_EXECUTABLE} -c "import setuptools; print(setuptools.__version__)"
-        OUTPUT_VARIABLE SETUPTOOLS_VERSION
-        ERROR_VARIABLE SETUPTOOLS_ERROR
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-    )
-
-    # Check if the command succeeded (i.e., setuptools is installed)
-    if (SETUPTOOLS_VERSION)
-        # Cache the setuptools version for later use
-        set(SETUPTOOLS_INSTALLED TRUE CACHE BOOL "Indicates if setuptools is installed")
-        message(STATUS "setuptools is installed. Version: ${SETUPTOOLS_VERSION}")
-    else()
-        message(FATAL_ERROR "setuptools is not installed or could not be found. Error: ${SETUPTOOLS_ERROR}")
-    endif()
-
 endif()
 
-# -------------------------------------------------------
-# ---------------- RULES AND SUB PROJECTS ---------------
-# -------------------------------------------------------
+# Add main library and bindings
+add_subdirectory(src/containerlib)
 
-# include src directory
-add_subdirectory(src)
+if(BUILD_PYTHON_BINDINGS)
+    add_subdirectory(src/containerpy)
+endif()
 
-# Installation rules
-install(TARGETS ${Container_NAME} RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+# Testing configuration
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
+# Documentation configuration
+if(BUILD_DOCS)
+    find_package(Doxygen)
+    if(DOXYGEN_FOUND)
+        add_subdirectory(docs)
+    else()
+        message(STATUS "Doxygen not found, documentation will not be built")
+    endif()
+endif()
+
+# Installation configuration
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+# Generate package version file
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/ContainerConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Generate package config file
+configure_package_config_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ContainerConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/ContainerConfig.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Container
+)
+
+# Install config files
+install(
+    FILES
+        "${CMAKE_CURRENT_BINARY_DIR}/ContainerConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/ContainerConfigVersion.cmake"
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Container
+)
+
+# Install targets
+install(
+    EXPORT ContainerTargets
+    FILE ContainerTargets.cmake
+    NAMESPACE Container::
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Container
+)
+
+# Install headers
+install(
+    DIRECTORY include/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h"
+)
+
+# Export package for use from build tree
+export(EXPORT ContainerTargets
+    FILE "${CMAKE_CURRENT_BINARY_DIR}/ContainerTargets.cmake"
+    NAMESPACE Container::
+)
+
+# Register package in user's package registry
+export(PACKAGE Container)
+
+# Print configuration summary
+message(STATUS "")
+message(STATUS "Configuration Summary")
+message(STATUS "--------------------")
+message(STATUS "Version:              ${PROJECT_VERSION}")
+message(STATUS "Build type:           ${CMAKE_BUILD_TYPE}")
+message(STATUS "Shared libs:          ${BUILD_SHARED_LIBS}")
+message(STATUS "Python bindings:      ${BUILD_PYTHON_BINDINGS}")
+message(STATUS "Build testing:        ${BUILD_TESTING}")
+message(STATUS "Build documentation:  ${BUILD_DOCS}")
+message(STATUS "Install prefix:       ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "")
