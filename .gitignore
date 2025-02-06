@@ -3,3 +3,5 @@
 /build_release
 /dist
 /python/containerpy.egg-info/*
+/python/containerpy/ContainerPy.cpython-312-x86_64-linux-gnu.so
+/python/containerpy/libContainer.so
