@@ -169,6 +169,7 @@ setup(
 	long_description=get_long_description(),
 	long_description_content_type="text/markdown",
 	url="https://github.com/AhmedAredah/container",
+	license="AGPL-V3", 
 	
 	# Package configuration
 	packages=find_packages(where="python"),
@@ -193,7 +194,7 @@ setup(
 		"Development Status :: 4 - Beta",
 		"Intended Audience :: Developers",
 		"Topic :: Software Development :: Libraries :: Python Modules",
-		"License :: OSI Approved :: MIT License",  # Adjust as needed
+		"License :: OSI Approved :: GNU Affero General Public License v3",
 		"Programming Language :: Python :: 3",
 		"Programming Language :: Python :: 3.8",
 		"Programming Language :: Python :: 3.9",
