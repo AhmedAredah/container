@@ -1,142 +1,228 @@
-# Container Project
-**Version**: 0.0.1
+# Container Management Library
 
-**Vendor**: (C) 2022-2023 Virginia Tech Transportation Institute - Center for Sustainable Mobility
+**Version**: 0.1.0
+
+**Vendor**: (C) 2022-2025 Virginia Tech Transportation Institute - Center for Sustainable Mobility
 
 **Authors**: Ahmed Aredah, Hesham Rakha
 
-The Container project consists of two main subprojects:
+## Overview
 
- - containerlib: A C++ library built using Qt 6.4.3.
- - containerpy: A Python binding for containerlib using pybind11, enabling Python applications to access the features provided by containerlib. It is recommended to build containerpy within a Conda environment for better dependency management.
-
-## Prerequisites
-### General Requirements
- - CMake >= 3.24
- - Qt 6.4.3 (or higher)
- - C++ Compiler supporting C++23 standard (e.g., GCC, Clang, MSVC)
-
-### containerlib Specific
- - Qt Components:
-   - Core
-   - Sql
-   
-### containerpy Specific
- - Python (Recommended: Python 3.8+)
- - Conda environment
- - pybind11 (pip install pybind11)
- - setuptools (pip install setuptools)
- - Qt Components:
-   - Core
-   - Sql
+The Container project is a comprehensive container management library with robust C++ and Python interfaces, designed for tracking, managing, and analyzing container logistics. The library provides flexible container operations, custom variable tracking, and supports both in-memory and database-backed storage.
 
 ## Project Structure
-```plaintext
+
+```
 Container/
 │
 ├── src/
-│   ├── containerlib/          # C++ library
-│   │   ├── CMakeLists.txt     # Build configuration for containerlib
-│   │   ├── container.h        # Header files
-│   │   └── ...                # Other source files
-│   │
+│   ├── containerlib/          # C++ core library
 │   └── containerpy/           # Python bindings
-│       ├── CMakeLists.txt     # Build configuration for containerpy
-│       ├── bindcontainer.cpp  # pybind11 binding source files
-│       └── ...                # Other Python binding files
 │
-├── CMakeLists.txt             # Main build configuration
-└── README.md                  # Project documentation
+├── include/                   # Header files
+├── tests/                     # Test suite
+├── python/                    # Python package configuration
+└── cmake/                     # CMake configuration files
 ```
 
-## Building the Project
-### Step 1: Clone the Repository
-```bash
-git clone <repository-url>
-cd Container
-```
-### Step 2: Configure the Project with CMake
-Make sure CMake is available and correctly configured. Set up the build using the following command:
+## Prerequisites
+
+### System Requirements
+- Operating System: Windows, macOS, or Linux
+- Compiler: GCC, Clang, or MSVC with C++23 support
+- Build Tools: CMake (>= 3.24), Ninja (optional)
+
+### Dependencies
+- Qt 6.0 or higher
+  - Download from: **https://www.qt.io/download-dev**
+- Python 3.8+
+- pybind11 (>= 2.10.0)
+
+## Installation
+
+### 1. Clone the Repository
 
 ```bash
+git clone https://github.com/AhmedAredah/container.git
+cd container
+```
+
+### 2. Install Dependencies
+
+#### Qt Installation
+1. Visit **https://www.qt.io/download-dev**
+2. Download Qt 6.x Online Installer
+3. Install Qt with the following components:
+   - Qt Core
+   - Qt SQL
+   - Development Tools
+
+#### Python Dependencies
+It's recommended to use a Conda environment:
+
+```bash
+# Create and activate a Conda environment
+conda create -n containerenv python=3.10
+conda activate containerenv
+
+# Install required dependencies
+conda install -c conda-forge pybind11 cmake ninja setuptools pyqt
+```
+
+**Note**: 
+- Replace `3.10` with your preferred Python version (3.8+)
+- The environment uses Conda-forge channel to ensure compatible package versions
+- This approach provides better dependency management, especially for C++ library bindings
+
+### 3. Build the Project
+
+#### Using Automated Build Script (Recommended)
+
+The project includes a convenient `build_with_admin.sh` script that automates the build process:
+
+```bash
+# Make the script executable
+chmod +x build_with_admin.sh
+
+# Activate the anaconda env
+conda activate containerenv
+
+# Build, install, and create wheel package
+./build_with_admin.sh
+```
+
+This script performs the following actions:
+- Creates build directory
+- Configures CMake
+- Builds the library in debug/release
+- Installs the library
+- Generates wheel package
+- Installs the Python package
+
+#### Manual CMake Build
+
+```bash
+# Create build directory
 mkdir build && cd build
+
+# Configure the project
 cmake ..
+
+# Build the library
+cmake --build .
 ```
-This will configure both containerlib and containerpy for building.
 
-### Step 3: Building containerlib
-containerlib is the C++ core library that must be built first:
+#### Build Options
+- `-DBUILD_SHARED_LIBS=ON/OFF`: Build shared or static libraries
+- `-DBUILD_PYTHON_BINDINGS=ON/OFF`: Enable/disable Python bindings
+- `-DBUILD_TESTING=ON/OFF`: Enable/disable tests
+- `-DCMAKE_BUILD_TYPE=Debug/Release`: Set build configuration
 
- 1. Run the following command to build:
+### 4. Install the Library
 
 ```bash
-cmake --build . --target Container
+# Install system-wide
+cmake --build . --target install
+
+# Or install in a specific directory
+cmake -DCMAKE_INSTALL_PREFIX=/path/to/install ..
 ```
 
- 2. Compiler Settings:
- - containerlib is compiled with Qt 6.8.0. But any Qt version 6 would work.
- - The library supports both Debug and Release configurations.
+#### Using Wheel Package
 
- 3. Qt Dependencies: Make sure Qt is installed and the environment variable QT_DIR is set correctly. For example:
+After running the build script, you can install the wheel package:
 
 ```bash
-export QT_DIR=/path/to/qt6.4.3
+# Install the generated wheel package
+pip install dist/containerpy-*.whl
 ```
 
-### Step 4: Building containerpy
-*containerpy* is the Python interface for containerlib. It should be built after containerlib.
+## Usage
 
- 1. **Recommended: Use Conda Environment**
+### C++ Example
 
-```bash
-conda create -n containerpy python=3.10
-conda activate containerpy
+```cpp
+#include <containerLib/container.h>
+#include <containerLib/containermap.h>
+
+int main() {
+    ContainerCore::Container container("CNT001", ContainerCore::Container::twentyFT);
+    container.setContainerCurrentLocation("Port A");
+    container.addDestination("Port B");
+
+    ContainerCore::ContainerMap containerMap;
+    containerMap.addContainer("CNT001", &container);
+}
 ```
 
- 2. **Ensure pybind11 and setuptools Are Installed**:
-
-```bash
-pip install pybind11 setuptools
-```
-
- 3. **Build containerpy**:
-
-```bash
-Copy code
-cmake --build . --target ContainerPy
-```
-4. **Qt Dependencies for containerpy**: Ensure the same environment variable QT_DIR is set for correct linking of Qt components:
-
-```bash
-Copy code
-export QT_DIR=/path/to/qt6.4.3
-```
-
-### Step 5: Installing containerpy
-The Python bindings can be installed using CMake:
-
-```bash
-cmake --build . --target install_python_module
-```
-This will copy the containerpy shared library and necessary Qt dependencies to the Python site-packages directory. You can however do the same thing manually. Copy the content of the installing folder to the site-package folder of your python environment. You need to make sure the Qt path is in your system path so that the python library recognizes it.
-
-## Using containerpy
-After successful build and installation, containerpy can be used in Python scripts as follows:
+### Python Example
 
 ```python
-Copy code
-import ContainerPy
+from containerpy import Container, ContainerMap, ContainerSize, HaulerType
 
-# Example of using ContainerPy functionality
-package = ContainerPy.Package('package1')
+# Create a container
+container = Container("CNT001", ContainerSize.TwentyFT)
+container.set_container_current_location("Port A")
+set_container_next_destinations(["Port B", "Port C"])
+
+
+# Add custom variables
+container.add_custom_variable(HaulerType.Truck, "Weight", 1000)
+
+# Create a container storage
+container_map = ContainerMap()
+container_map.add_container(container)
+
+# Retrieve all containers in the storage
+all_containers = container_map.get_all_containers()
 ```
 
-Ensure that the containerpy module is accessible by Python. If you encounter import errors, verify that it has been installed in your active Python environment's site-packages.
+## Testing
 
-## Notes on Platform-Specific Builds
- - Windows: Ensure .dll files are copied correctly. Use Visual Studio to build the project.
- - macOS: Ensure .dylib files are correctly linked.
- - Linux: Use .so files and make sure all necessary dependencies are installed.
+### Run C++ Tests
+```bash
+# After building
+ctest
+```
+
+### Run Python Tests
+```bash
+
+# Activate the anaconda env
+conda activate containerenv
+
+# In the project root
+python -m pytest tests/python
+```
+
+## PyPI Distribution
+
+### Build whl file
+```bash
+# Build wheel package
+python -m build
+
+# Build Conda package
+conda build conda/
+```
 
 ## License
-(C) 2024-2025 Virginia Tech Transportation Institute - Center for Sustainable Mobility. All rights reserved.
+
+This project is licensed under the GNU Affero General Public License v3.0 (AGPL-3.0). 
+
+See the [LICENSE](LICENSE) file for details.
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## Contact
+
+- **Project Link**: https://github.com/AhmedAredah/container
+- **Issue Tracker**: https://github.com/AhmedAredah/container/issues
+
+**Note**: This is an early release. Contributions and feedback are welcome!
