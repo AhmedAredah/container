@@ -13,6 +13,7 @@ recursive-include python *.py *.pyi
 # Include compiled libraries
 recursive-include build *.so
 recursive-include build *.pyd
+recursive-include build *.dll
 recursive-include build *.dylib
 
 # Documentation and license
