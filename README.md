@@ -148,7 +148,7 @@ pip install dist/containerpy-*.whl
 int main() {
     ContainerCore::Container container("CNT001", ContainerCore::Container::twentyFT);
     container.setContainerCurrentLocation("Port A");
-    container.addDestination("Port B");
+    container.set_container_next_destinations({"Port B", "Port C"});
 
     ContainerCore::ContainerMap containerMap;
     containerMap.addContainer("CNT001", &container);
@@ -163,7 +163,7 @@ from containerpy import Container, ContainerMap, ContainerSize, HaulerType
 # Create a container
 container = Container("CNT001", ContainerSize.TwentyFT)
 container.set_container_current_location("Port A")
-set_container_next_destinations(["Port B", "Port C"])
+container.set_container_next_destinations(["Port B", "Port C"])
 
 
 # Add custom variables

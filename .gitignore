@@ -5,3 +5,5 @@
 /python/containerpy.egg-info/*
 /python/containerpy/ContainerPy*.so
 /python/containerpy/libContainer.so
+/python/containerpy/*.dll
+/python/containerpy/*.pyd

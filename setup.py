@@ -21,7 +21,10 @@ class CMakeBuild(build_ext):
 	def get_cmake_version(self):
 		try:
 			out = subprocess.check_output(['cmake', '--version'])
-			return tuple(map(int, out.decode().split('\n')[0].split(' ')[2].split('.')))
+			version_str = out.decode().split('\n')[0].split(' ')[2]
+			# Strip any suffix (rc1, beta, etc) keeping only digits and dots
+			version_str = ''.join(c for c in version_str if c.isdigit() or c == '.')
+			return tuple(map(int, version_str.split('.')))
 		except:
 			return None
 			
@@ -75,6 +78,11 @@ class CMakeBuild(build_ext):
 		
 		os.makedirs(cmake_build_dir, exist_ok=True)
 		os.makedirs(final_lib_dir, exist_ok=True)
+  
+		# Get generator and architecture from environment variables
+		generator = os.getenv('CMAKE_GENERATOR', '') # e.g., 'Ninja'. 
+		architecture = os.getenv('CMAKE_ARCHITECTURE', '')  # e.g., 'x64' or 'Win32'
+
 
 		cmake_args = [
 			f"-DCMAKE_LIBRARY_OUTPUT_DIRECTORY={final_lib_dir}",
@@ -84,6 +92,14 @@ class CMakeBuild(build_ext):
 			"-DBUILD_PYTHON_BINDINGS=ON",
 			"-DBUILD_TESTING=OFF",
 		]
+  
+		# Set generator
+		if generator:
+			cmake_args.extend(["-G", generator])
+
+		# Set architecture for Windows
+		if platform.system() == "Windows" and architecture:
+			cmake_args.extend(["-A", architecture])
 
 		# Set RPATH settings for non-Windows platforms
 		if platform.system() != "Windows":
@@ -94,9 +110,11 @@ class CMakeBuild(build_ext):
 			]
 
 		if platform.system() == "Windows":
-			cmake_args += ["-GNinja", "-DCMAKE_C_COMPILER=cl", "-DCMAKE_CXX_COMPILER=cl"]
+			if generator == "Ninja":
+				cmake_args += ["-GNinja", "-DCMAKE_C_COMPILER=cl", "-DCMAKE_CXX_COMPILER=cl"]
 		else:
-			cmake_args += ["-GNinja", "-DCMAKE_C_COMPILER=gcc", "-DCMAKE_CXX_COMPILER=g++"]
+			if generator == "Ninja":
+				cmake_args += ["-GNinja", "-DCMAKE_C_COMPILER=gcc", "-DCMAKE_CXX_COMPILER=g++"]
 
 		build_args = ["--config", cfg]
 
@@ -109,39 +127,74 @@ class CMakeBuild(build_ext):
 		
 		print(f"Looking for libraries in: {source_dir}")
 		
-		for lib_pattern in [
-			'libContainer*',
-			f'ContainerPy.cpython-{sys.version_info.major}{sys.version_info.minor}*'
-		]:
-			pattern = os.path.join(source_dir, f'{lib_pattern}{lib_ext}')
-			print(f"Searching with pattern: {pattern}")
-			for lib_file in glob.glob(pattern):
-				dest_file = os.path.join(final_lib_dir, os.path.basename(lib_file))
-				
-				# Skip if source and destination are identical
-				try:
-					if os.path.exists(dest_file) and os.path.samefile(lib_file, dest_file):
-						print(f"Skipping copy as source and destination are identical: {lib_file}")
-						continue
-				except FileNotFoundError:
-					pass
+		if platform.system() == 'Windows':
+			source_dirs = [
+				os.path.join(cmake_build_dir, 'Release'),
+				os.path.join(cmake_build_dir, 'lib', 'Release'),
+				os.path.join(cmake_build_dir, 'Debug'),
+				os.path.join(cmake_build_dir, 'lib', 'Debug')
+			]
+   
+			# Add Qt DLL directory
+			qt_bin_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.getenv('QT_CMAKE_PATH')))), 'bin')
+   
+			# Required Qt DLLs
+			qt_dlls = ['Qt6Core.dll', 'Qt6Sql.dll']
+			
+			# Copy Qt DLLs
+			if os.path.exists(qt_bin_dir):
+				for dll in qt_dlls:
+					qt_dll_path = os.path.join(qt_bin_dir, dll)
+					if os.path.exists(qt_dll_path):
+						dest_file = os.path.join(final_lib_dir, dll)
+						print(f"Copying Qt DLL: {qt_dll_path} to {dest_file}")
+						shutil.copy2(qt_dll_path, dest_file)
+					else:
+						print(f"Warning: Could not find {dll} in {qt_bin_dir}")
+
+			for src_dir in source_dirs:
+				if not os.path.exists(src_dir):
+					continue
 					
-				print(f"Copying {lib_file} to {dest_file}")
-				shutil.copy2(lib_file, dest_file)
-				
-				if platform.system() == 'Linux':
+				for pattern in ['*.dll', '*.pyd']:
+					for lib_file in glob.glob(os.path.join(src_dir, pattern)):
+						dest_file = os.path.join(final_lib_dir, os.path.basename(lib_file))
+						print(f"Copying {lib_file} to {dest_file}")
+						shutil.copy2(lib_file, dest_file)
+		else:
+			for lib_pattern in [
+				'libContainer*',
+				f'ContainerPy.cpython-{sys.version_info.major}{sys.version_info.minor}*'
+			]:
+				pattern = os.path.join(source_dir, f'{lib_pattern}{lib_ext}')
+				print(f"Searching with pattern: {pattern}")
+				for lib_file in glob.glob(pattern):
+					dest_file = os.path.join(final_lib_dir, os.path.basename(lib_file))
+					
+					# Skip if source and destination are identical
 					try:
-						# Get actual Python lib path from the target environment
-						python_lib = os.path.join(os.path.dirname(os.path.dirname(sys.executable)), 'lib')
-						rpath = f"$ORIGIN:{python_lib}"
-						subprocess.check_call(['patchelf', '--set-rpath', rpath, dest_file])
-						print(f"Set RPATH for {dest_file} to {rpath}")
+						if os.path.exists(dest_file) and os.path.samefile(lib_file, dest_file):
+							print(f"Skipping copy as source and destination are identical: {lib_file}")
+							continue
+					except FileNotFoundError:
+						pass
 						
-						# Verify RPATH
-						rpath_check = subprocess.check_output(['patchelf', '--print-rpath', dest_file]).decode().strip()
-						print(f"Verified RPATH: {rpath_check}")
-					except Exception as e:
-						print(f"Warning: Could not set RPATH for {dest_file}: {e}")
+					print(f"Copying {lib_file} to {dest_file}")
+					shutil.copy2(lib_file, dest_file)
+					
+					if platform.system() == 'Linux':
+						try:
+							# Get actual Python lib path from the target environment
+							python_lib = os.path.join(os.path.dirname(os.path.dirname(sys.executable)), 'lib')
+							rpath = f"$ORIGIN:{python_lib}"
+							subprocess.check_call(['patchelf', '--set-rpath', rpath, dest_file])
+							print(f"Set RPATH for {dest_file} to {rpath}")
+							
+							# Verify RPATH
+							rpath_check = subprocess.check_output(['patchelf', '--print-rpath', dest_file]).decode().strip()
+							print(f"Verified RPATH: {rpath_check}")
+						except Exception as e:
+							print(f"Warning: Could not set RPATH for {dest_file}: {e}")
   
 class InstallPlatlib(install):
 	def finalize_options(self):
@@ -175,7 +228,7 @@ setup(
 	packages=find_packages(where="python"),
 	package_dir={"": "python"},
 	package_data={
-		"containerpy": ["*.pyi", "py.typed", "*.so", "*.pyd", "*.dylib"],
+		"containerpy": ["*.pyi", "py.typed", "*.so", "*.dll", "*.pyd", "*.dylib"],
 	},
 	
 	# Python requirements
