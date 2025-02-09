@@ -93,6 +93,17 @@ BUILD_WHL=${BUILD_WHL:-y}
 read -p "Do you want to install the Python wheel file? ([y]/n) " INSTALL_WHL
 INSTALL_WHL=${INSTALL_WHL:-y}
 
+# Only ask for docs and tests if building Release
+if [[ "$BUILD_RELEASE" == "y" ]]; then
+    read -p "Do you want to generate documentation? ([y]/n) " GENERATE_DOCS
+    GENERATE_DOCS=${GENERATE_DOCS:-y}
+    read -p "Do you want to run tests? ([y]/n) " RUN_TESTS
+    RUN_TESTS=${RUN_TESTS:-y}
+else
+    GENERATE_DOCS="n"
+    RUN_TESTS="n"
+fi
+
 # Display summary before proceeding
 echo -e "\n**Summary of Selected Options:**"
 echo "--------------------------------"
@@ -105,6 +116,8 @@ echo "Install Debug build: $INSTALL_DEBUG"
 echo "Install Release build: $INSTALL_RELEASE"
 echo "Build Python wheel file: $BUILD_WHL"
 echo "Install Python wheel file: $INSTALL_WHL"
+[[ "$BUILD_RELEASE" == "y" ]] && echo "Generate documentation: $GENERATE_DOCS"
+[[ "$BUILD_RELEASE" == "y" ]] && echo "Run tests: $RUN_TESTS"
 echo "--------------------------------"
 
 # Ask if the user wants to modify any selection
@@ -131,6 +144,13 @@ if [[ "$MODIFY_SELECTION" == "y" ]]; then
 
     read -p "Install Python wheel file? (Current: $INSTALL_WHL) ([y]/n) " NEW_INSTALL_WHL
     INSTALL_WHL=${NEW_INSTALL_WHL:-$INSTALL_WHL}
+
+    if [[ "$BUILD_RELEASE" == "y" ]]; then
+        read -p "Generate documentation? (Current: $GENERATE_DOCS) ([y]/n) " NEW_GENERATE_DOCS
+        GENERATE_DOCS=${NEW_GENERATE_DOCS:-$GENERATE_DOCS}
+        read -p "Run tests? (Current: $RUN_TESTS) ([y]/n) " NEW_RUN_TESTS
+        RUN_TESTS=${NEW_RUN_TESTS:-$RUN_TESTS}
+    fi
 fi
 
 echo -e "\nProceeding with the selected options..."
@@ -173,7 +193,9 @@ if [[ "$BUILD_RELEASE" == "y" ]]; then
         -DCMAKE_PREFIX_PATH="$QT_PATH" \
         -DPYTHON_EXECUTABLE="$PYTHON_PATH" \
         -Dpybind11_DIR="$PYBIND11_DIR" \
-        -DCMAKE_INSTALL_PREFIX=/usr/local
+        -DCMAKE_INSTALL_PREFIX=/usr/local \
+        -DBUILD_DOCS="$([ "$GENERATE_DOCS" == "y" ] && echo "ON" || echo "OFF")" \
+        -DBUILD_TESTING="$([ "$RUN_TESTS" == "y" ] && echo "ON" || echo "OFF")"
     check_command "CMake configuration (Release)"
 
     make -j$NUM_CORES
