@@ -1,0 +1,52 @@
+/**
+\mainpage ContainerLib Documentation
+
+\section intro_sec Introduction
+ContainerLib is a comprehensive C++ library for container management and logistics simulation. It provides a robust framework for handling shipping containers, tracking their movements, and managing associated data.
+
+\section features_sec Key Features
+- Container tracking and management
+- Package handling and organization
+- Multi-format data persistence (memory and SQLite)
+- Thread-safe operations
+- Python bindings for cross-language compatibility
+
+\section usage_sec Getting Started
+To use ContainerLib in your project:
+
+\code{.cpp}
+#include "containerLib/container.h"
+#include "containerLib/containermap.h"
+
+// Create a container
+ContainerCore::Container container("CONT123", ContainerCore::Container::twentyFT);
+
+// Add it to container map
+ContainerCore::ContainerMap containerMap;
+containerMap.addContainer(container.getContainerID(), &container);
+\endcode
+
+\section arch_sec Architecture
+The library consists of several core components:
+- ContainerMap: Central management class for container operations
+- Container: Represents individual shipping containers
+- Package: Handles package information within containers
+
+\section build_sec Building
+ContainerLib uses CMake as its build system. Basic build instructions:
+\verbatim
+mkdir build && cd build
+cmake ..
+make
+\endverbatim
+
+\section license_sec License
+This project is licensed under AGPL-v3. See LICENSE file for details.
+
+\section contact_sec Contact
+For support or questions, please contact:
+- Author: Ahmed Aredah
+- Email: AhmedAredah@vt.edu
+
+\copyright 2022-2025 Ahmed Aredah
+*/

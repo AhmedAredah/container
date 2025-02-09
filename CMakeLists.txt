@@ -25,8 +25,8 @@ set(Container_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 # Global options
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
 option(BUILD_PYTHON_BINDINGS "Build Python bindings" ON)
-option(BUILD_TESTING "Build tests" OFF)
-option(BUILD_DOCS "Build documentation" OFF)
+option(BUILD_TESTING "Build tests" ON)
+option(BUILD_DOCS "Build documentation" ON)
 
 # Set default build type if not specified
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)

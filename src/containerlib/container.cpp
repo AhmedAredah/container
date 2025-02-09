@@ -244,13 +244,16 @@ QString Container::getContainerCurrentLocation() const {
 
 void Container::setContainerCurrentLocation(const QString &location) {
     if (location != m_containerCurrentLocation) {
-        m_containerMovementHistory.append(location);
-        emit containerCurrentLocationChanged();
-        // Add the new location to movement history
+        m_containerCurrentLocation = location; // Update the current location
+
+        // Add the new location to movement history if it's not already present
         if (!m_containerMovementHistory.contains(location)) {
             m_containerMovementHistory.append(location);
             emit containerMovementHistoryChanged();
         }
+
+        // Emit the location change signal
+        emit containerCurrentLocationChanged();
     }
 }
 

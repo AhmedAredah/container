@@ -1,3 +1,15 @@
+/**
+* @file containercache.h
+* @brief LRU cache implementation for container management
+* @author Ahmed Aredah
+* @date 2024
+* 
+* This file provides a templated Least Recently Used (LRU) cache implementation
+* specifically designed for container objects. It manages memory efficiently
+* by maintaining a fixed-size cache with automatic eviction of least recently
+* used items.
+*/
+
 #ifndef CONTAINERCACHE_H
 #define CONTAINERCACHE_H
 
@@ -7,26 +19,117 @@
 
 namespace ContainerCore{
 
+/**
+* @class ContainerCache
+* @brief Implements an LRU cache for container objects
+* @tparam T The type of objects to be cached (must be pointer type)
+* 
+* This class provides a fixed-size LRU cache implementation with:
+* - Automatic eviction of least recently used items
+* - Optional memory management of cached objects
+* - Thread-unsafe operations (external synchronization required)
+* 
+* Requirements for type T:
+* - Must be a pointer type
+* - Must support proper cleanup in destructor
+* - Should support copy construction if cache entries need duplication
+*/
 template <typename T>
 class ContainerCache {
 public:
+
+   /**
+    * @brief Constructs a new cache
+    * @param maxSize Maximum number of objects to store (default: 200)
+    * @param deletePntrsWhileDestructing Whether to delete cached objects on destruction
+    */
     explicit ContainerCache(int maxSize = 200, bool deletePntrsWhileDestructing = true);
+
+   /**
+    * @brief Destructor that handles cleanup of cached objects
+    * 
+    * If deletePntrsWhileDestructing is true, deletes all cached objects.
+    */
     ~ContainerCache();
 
+   /**
+    * @brief Inserts an object into the cache
+    * @param key The key to associate with the object
+    * @param object Pointer to the object to cache
+    * 
+    * If the cache is full, the least recently used item is evicted.
+    * If the key already exists, the old object is replaced.
+    */
     void insert(const QString &key, T *object);
+    
+   /**
+    * @brief Retrieves an object from the cache (non-const version)
+    * @param key The key of the object to retrieve
+    * @return Pointer to the cached object, or nullptr if not found
+    * 
+    * Updates the object's position in the LRU order.
+    */
     T* object(const QString &key);               // Non-const version
+    
+   /**
+    * @brief Retrieves an object from the cache (const version)
+    * @param key The key of the object to retrieve
+    * @return Pointer to the cached object, or nullptr if not found
+    * 
+    * Does not modify the LRU order.
+    */
     T* object(const QString &key) const;         // Const version, but returns non-const pointer
+    
+   /**
+    * @brief Removes an object from the cache
+    * @param key The key of the object to remove
+    * @param deleteObject Whether to delete the removed object
+    */
     void remove(const QString &key, bool deleteObject = false);
+    
+   /**
+    * @brief Clears all objects from the cache
+    * @param deleteObjects Whether to delete the cached objects
+    */
     void clear(bool deleteObjects = false);
+    
+   /**
+    * @brief Checks if a key exists in the cache
+    * @param key The key to check
+    * @return true if the key exists, false otherwise
+    */
     bool contains(const QString &key) const;
+
+   /**
+    * @brief Returns the number of objects in the cache
+    * @return Current cache size
+    */
     int size() const;
+
+   /**
+    * @brief Returns all keys in the cache
+    * @return List of cache keys
+    */
     QList<QString> keys() const;
+
+   /**
+    * @brief Sets whether to delete objects during destruction
+    * @param dlt true to delete objects, false to leave them intact
+    */
     void setDeleteWhileDestructing(bool dlt);
 
 private:
+
+   /** @brief Maximum number of objects the cache can hold */
     int m_maxSize;
+
+   /** @brief Map storing the cached objects */
     QMap<QString, T *> m_cache;
+
+   /** @brief List maintaining the order of object access (LRU order) */
     QList<QString> m_accessOrder;
+
+   /** @brief Whether to delete cached objects during destruction */
     bool m_deletePointerWhenDesctructing = true;
 };
 
