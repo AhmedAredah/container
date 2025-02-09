@@ -12,3 +12,7 @@ add_custom_target(doc_doxygen ALL
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/mainpage.dox
                ${CMAKE_CURRENT_BINARY_DIR}/mainpage.dox
                COPYONLY)
+
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/dark_theme.css
+               ${CMAKE_CURRENT_BINARY_DIR}/dark_theme.css
+               COPYONLY)
