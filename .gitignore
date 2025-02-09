@@ -7,3 +7,4 @@
 /python/containerpy/libContainer.so
 /python/containerpy/*.dll
 /python/containerpy/*.pyd
+/CMakeLists.txt.user
