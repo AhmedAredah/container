@@ -358,6 +358,14 @@ public:
     QJsonObject toJson() const;
 
     /**
+    * @brief Creates a deep copy of this container
+    * @return Pointer to the new copied container
+    * @note The caller is responsible for managing the memory of the
+    * returned container
+    */
+    ContainerCore::Container* copy() const;
+
+    /**
     * @brief Serialization operator for Container class
     * @param out Output stream
     * @param container Container to serialize

@@ -56,6 +56,12 @@ QJsonObject Package::toJson() const
     return jsonObject;
 }
 
+ContainerCore::Package* Package::copy() const {
+    Package* newPackage = new Package();
+    newPackage->setPackageID(m_packageID);
+    return newPackage;
+}
+
 QDataStream &operator<<(QDataStream &out, const Package &package) {
     out << package.m_packageID;
     return out;

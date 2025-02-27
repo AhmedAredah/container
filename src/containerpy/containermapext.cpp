@@ -165,3 +165,7 @@ std::map<std::string, ContainerExt *> ContainerMapExt::convertQMapToSTDMapContai
     }
     return stdMap;
 }
+
+void ContainerMapExt::clear() {
+    mContainerMap.clear();
+}

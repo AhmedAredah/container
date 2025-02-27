@@ -127,7 +127,8 @@ PYBIND11_MODULE(ContainerPy, m) {
              "Set the package ID using std::string.")
         .def("to_json", [](PackageExt &self) {
                 return PackageExtToPyDict(self);
-            }, "Extract package information to a Python dictionary");
+            }, "Extract package information to a Python dictionary")
+        .def("copy", &PackageExt::copy, py::return_value_policy::reference);
 
     py::class_<ContainerExt>(m, "Container")
         .def(py::init<const std::string &, ContainerExt::ContainerSize>(),
@@ -192,7 +193,8 @@ PYBIND11_MODULE(ContainerPy, m) {
              "Get the container's movement history as a list of strings.")
         .def("to_json", [](ContainerExt &self) {
                 return ContainerExtToPyDict(self);
-            }, "Extract Container information to a Python dictionary");
+            }, "Extract Container information to a Python dictionary")
+        .def("copy", &ContainerExt::copy, py::return_value_policy::reference);
 
 
     // Binding the ContainerSize enum
@@ -308,6 +310,7 @@ PYBIND11_MODULE(ContainerPy, m) {
         .def("to_json", [](ContainerMapExt &self) {
                 return ContainerMapExtToPyDict(self);
             }, "Extract ContainerMap information to a Python dictionary")
+        .def("clear", &ContainerMapExt::clear)
         .def_static("load_containers_from_json",
                     [](const py::dict &pyDict) {
                         QJsonObject jsonObj = PyDictToQJsonObject(pyDict);

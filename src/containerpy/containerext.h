@@ -76,6 +76,8 @@ public:
 
     QJsonObject toJson() const;
 
+    ContainerCore::Container *copy();
+
     ContainerCore::Container *getBaseContainer();
 
 private:

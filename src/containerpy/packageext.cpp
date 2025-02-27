@@ -56,6 +56,11 @@ std::string PackageExt::packageID() const {
     return mPackage ? mPackage->packageID().toStdString() : "";
 }
 
+ContainerCore::Package *PackageExt::copy()
+{
+    return mPackage ? mPackage->copy() : nullptr;
+}
+
 QJsonObject PackageExt::toJson() const
 {
     return mPackage->toJson();

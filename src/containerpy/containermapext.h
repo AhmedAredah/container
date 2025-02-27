@@ -49,6 +49,8 @@ public:
 
     QJsonObject toJson() const;
 
+    void clear();
+
 private:
     ContainerCore::ContainerMap mContainerMap;
 
