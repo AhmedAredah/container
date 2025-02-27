@@ -172,6 +172,12 @@ install(
     FILES_MATCHING PATTERN "*.h"
 )
 
+# Also install generated export header
+install(
+    FILES "${CMAKE_BINARY_DIR}/src/containerlib/include/Container_export.h"
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/containerLib
+)
+
 # Export package for use from build tree
 export(EXPORT ContainerTargets
     FILE "${CMAKE_CURRENT_BINARY_DIR}/ContainerTargets.cmake"
