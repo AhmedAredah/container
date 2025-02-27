@@ -65,7 +65,20 @@ if(NOT APPLE)
     target_link_libraries(${PYTHON_LIB_NAME} PRIVATE Python::Python)
 endif()
 
+# Installation for Python module when using CMake directly
+if(NOT SKBUILD)  # Don't install via CMake when building with setup.py
+    install(TARGETS ${PYTHON_LIB_NAME}
+        LIBRARY DESTINATION ${Python_SITEARCH}/containerpy
+        RUNTIME DESTINATION ${Python_SITEARCH}/containerpy
+    )
 
+    # Install type hints (.pyi) file
+    install(FILES
+        ${CMAKE_SOURCE_DIR}/python/containerpy/ContainerPy.pyi
+        ${CMAKE_SOURCE_DIR}/python/containerpy/__init__.py
+        DESTINATION ${Python_SITEARCH}/containerpy
+    )
+endif()
 
 # Print configuration summary
 message(STATUS "")
