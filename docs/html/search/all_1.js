@@ -16,7 +16,7 @@ var searchData=
   ['containeridchanged_13',['containerIDChanged',['../classContainerCore_1_1Container.html#a77645514380282d05014e77447a86ec6',1,'ContainerCore::Container']]],
   ['containerleavingtimechanged_14',['containerLeavingTimeChanged',['../classContainerCore_1_1Container.html#a0bb03fab4e8684c5b897dabc767eef42',1,'ContainerCore::Container']]],
   ['containerlib_20documentation_15',['ContainerLib Documentation',['../index.html',1,'']]],
-  ['containermap_16',['ContainerMap',['../classContainerCore_1_1ContainerMap.html',1,'ContainerCore::ContainerMap'],['../classContainerCore_1_1ContainerMap.html#a0b165e8f518c85c0441005b6504ade5b',1,'ContainerCore::ContainerMap::ContainerMap(QObject *parent=nullptr)'],['../classContainerCore_1_1ContainerMap.html#ad377c74dbc031c084ac57ad06dd9eac9',1,'ContainerCore::ContainerMap::ContainerMap(const ContainerMap &amp;other)'],['../classContainerCore_1_1ContainerMap.html#ab8dbe0d28386064bceb4e6c6dbee6166',1,'ContainerCore::ContainerMap::ContainerMap(const QJsonObject &amp;json, QObject *parent=nullptr)'],['../classContainerCore_1_1ContainerMap.html#af371c1c795c56ec1b75139ccf69b2359',1,'ContainerCore::ContainerMap::ContainerMap(const QString &amp;dbLocation, QObject *parent=nullptr)']]],
+  ['containermap_16',['ContainerMap',['../classContainerCore_1_1ContainerMap.html',1,'ContainerCore::ContainerMap'],['../classContainerCore_1_1ContainerMap.html#af371c1c795c56ec1b75139ccf69b2359',1,'ContainerCore::ContainerMap::ContainerMap(const QString &amp;dbLocation, QObject *parent=nullptr)'],['../classContainerCore_1_1ContainerMap.html#ad377c74dbc031c084ac57ad06dd9eac9',1,'ContainerCore::ContainerMap::ContainerMap(const ContainerMap &amp;other)'],['../classContainerCore_1_1ContainerMap.html#ab8dbe0d28386064bceb4e6c6dbee6166',1,'ContainerCore::ContainerMap::ContainerMap(const QJsonObject &amp;json, QObject *parent=nullptr)'],['../classContainerCore_1_1ContainerMap.html#a0b165e8f518c85c0441005b6504ade5b',1,'ContainerCore::ContainerMap::ContainerMap(QObject *parent=nullptr)']]],
   ['containermap_2eh_17',['containermap.h',['../containermap_8h.html',1,'']]],
   ['containermovementhistory_18',['containerMovementHistory',['../classContainerCore_1_1Container.html#a243d161de0e0e37fd077b69f0846a5f2',1,'ContainerCore::Container']]],
   ['containermovementhistorychanged_19',['containerMovementHistoryChanged',['../classContainerCore_1_1Container.html#a3f3703e78d81e2a97510e096e409add7',1,'ContainerCore::Container']]],
@@ -27,10 +27,11 @@ var searchData=
   ['containersize_24',['containerSize',['../classContainerCore_1_1Container.html#a2a860faea2e36373fd28bf6d8953d9da',1,'ContainerCore::Container']]],
   ['containersizechanged_25',['containerSizeChanged',['../classContainerCore_1_1Container.html#ac1030315d521b490bdf5d0ed9c17876a',1,'ContainerCore::Container']]],
   ['contains_26',['contains',['../classContainerCore_1_1ContainerCache.html#aa47b3bf8788884d77d747c1e1d6620b6',1,'ContainerCore::ContainerCache']]],
-  ['copyfrom_27',['copyFrom',['../classContainerCore_1_1ContainerMap.html#a4ecdd03bdbbe0772f4207f6d0310a45f',1,'ContainerCore::ContainerMap']]],
-  ['countcontainersbyaddedtime_28',['countContainersByAddedTime',['../classContainerCore_1_1ContainerMap.html#a6ff61cf50b642899c0741269e4948c6a',1,'ContainerCore::ContainerMap']]],
-  ['countcontainersbyleavingtime_29',['countContainersByLeavingTime',['../classContainerCore_1_1ContainerMap.html#a96faf2cac22727a64c69fd5688154551',1,'ContainerCore::ContainerMap']]],
-  ['countcontainersbynextdestination_30',['countContainersByNextDestination',['../classContainerCore_1_1ContainerMap.html#a5c119d27eb1c22ba975c715ef7991c8f',1,'ContainerCore::ContainerMap']]],
-  ['customvariables_31',['customVariables',['../classContainerCore_1_1Container.html#aca52097f07f4e3d7ab8ddc2bf2b4bff9',1,'ContainerCore::Container']]],
-  ['customvariableschanged_32',['customVariablesChanged',['../classContainerCore_1_1Container.html#a5c84f380512137e885ae219fb957dd9e',1,'ContainerCore::Container']]]
+  ['copy_27',['copy',['../classContainerCore_1_1Container.html#a7a2c32f46618bab94a73f1c02d965730',1,'ContainerCore::Container::copy()'],['../classContainerCore_1_1Package.html#af9a58493f1e7215ee7857a0a0d9c0d63',1,'ContainerCore::Package::copy()']]],
+  ['copyfrom_28',['copyFrom',['../classContainerCore_1_1ContainerMap.html#a4ecdd03bdbbe0772f4207f6d0310a45f',1,'ContainerCore::ContainerMap']]],
+  ['countcontainersbyaddedtime_29',['countContainersByAddedTime',['../classContainerCore_1_1ContainerMap.html#a6ff61cf50b642899c0741269e4948c6a',1,'ContainerCore::ContainerMap']]],
+  ['countcontainersbyleavingtime_30',['countContainersByLeavingTime',['../classContainerCore_1_1ContainerMap.html#a96faf2cac22727a64c69fd5688154551',1,'ContainerCore::ContainerMap']]],
+  ['countcontainersbynextdestination_31',['countContainersByNextDestination',['../classContainerCore_1_1ContainerMap.html#a5c119d27eb1c22ba975c715ef7991c8f',1,'ContainerCore::ContainerMap']]],
+  ['customvariables_32',['customVariables',['../classContainerCore_1_1Container.html#aca52097f07f4e3d7ab8ddc2bf2b4bff9',1,'ContainerCore::Container']]],
+  ['customvariableschanged_33',['customVariablesChanged',['../classContainerCore_1_1Container.html#a5c84f380512137e885ae219fb957dd9e',1,'ContainerCore::Container']]]
 ];
