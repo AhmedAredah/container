@@ -256,6 +256,7 @@ fi
 # Install Python wheel
 if [[ "$INSTALL_WHL" == "y" ]]; then
     echo "Installing Python wheel file to the current Python environment..."
+    sudo chown -R $(whoami) $CONDA_PREFIX
     $PYTHON_PATH -m pip install dist/containerpy*.whl --force-reinstall
     check_command "Python wheel install"
 fi
