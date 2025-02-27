@@ -112,13 +112,13 @@ target_compile_definitions(${LIB_NAME}
     PRIVATE
         CONTAINER_LIBRARY  # Defines CONTAINER_LIBRARY for internal use
     PUBLIC
-        CONTAINER_EXPORT   # Ensures symbols marked as CONTAINER_EXPORT are visible
+        $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:CONTAINER_STATIC_DEFINE>
 )
 
 # Ensure symbols are exported correctly
 set_target_properties(${LIB_NAME} PROPERTIES
-    CXX_VISIBILITY_PRESET default  # Ensures vtables and public symbols are exported
-    VISIBILITY_INLINES_HIDDEN OFF
+    CXX_VISIBILITY_PRESET hidden
+    VISIBILITY_INLINES_HIDDEN ON
 )
 
 
@@ -134,47 +134,6 @@ install(TARGETS ${LIB_NAME}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
-
-# Install header files
-install(FILES
-    ${CMAKE_SOURCE_DIR}/include/containerLib/Container_global.h
-    ${CMAKE_SOURCE_DIR}/include/containerLib/package.h
-    ${CMAKE_SOURCE_DIR}/include/containerLib/container.h
-    ${CMAKE_SOURCE_DIR}/include/containerLib/containermap.h
-    ${CMAKE_SOURCE_DIR}/include/containerLib/containercache.h
-    ${CMAKE_CURRENT_BINARY_DIR}/include/${LIB_NAME}_export.h
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/${LIB_NAME}
-)
-
-# Create and install the config file
-configure_package_config_file(
-    ${CMAKE_CURRENT_SOURCE_DIR}/Config.cmake.in
-    ${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME}Config.cmake
-    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_NAME}
-    PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
-)
-
-# Create and install the version file
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME}ConfigVersion.cmake
-    VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
-
-# Install config files
-install(FILES
-    ${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME}Config.cmake
-    ${CMAKE_CURRENT_BINARY_DIR}/${LIB_NAME}ConfigVersion.cmake
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_NAME}
-)
-
-# Install targets file
-install(EXPORT ${LIB_NAME}Targets
-    FILE ${LIB_NAME}Targets.cmake
-    NAMESPACE ${LIB_NAME}::
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${LIB_NAME}
-)
-
 # Add compiler warnings
 if(MSVC)
     target_compile_options(${LIB_NAME} PRIVATE /W4)
