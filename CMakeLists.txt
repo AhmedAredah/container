@@ -147,6 +147,7 @@ configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ContainerConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/ContainerConfig.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Container
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
 )
 
 # Install config files
