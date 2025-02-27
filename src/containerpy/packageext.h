@@ -31,6 +31,8 @@ public:
     // Getter for Package ID
     std::string packageID() const;
 
+    ContainerCore::Package *copy();
+
     QJsonObject toJson() const;
 
     // Returns a pointer to the base Package

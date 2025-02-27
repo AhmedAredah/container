@@ -335,6 +335,32 @@ void Container::deepCopy(const Container &other)
         other.m_customVariables; // Deep copy of custom variables
 }
 
+ContainerCore::Container* Container::copy() const {
+    Container* newContainer = new Container();
+
+    // Copy basic properties
+    newContainer->setContainerID(m_containerID);
+    newContainer->setContainerSize(m_containerSize);
+    newContainer->setContainerCurrentLocation(m_containerCurrentLocation);
+    newContainer->setContainerAddedTime(m_addedTime);
+    newContainer->setContainerLeavingTime(m_leavingTime);
+
+    // Copy destinations and history
+    newContainer->setContainerNextDestinations(m_containerNextDestinations);
+    newContainer->setContainerMovementHistory(m_containerMovementHistory);
+
+    // Deep copy packages
+    for (Package* package : m_packages) {
+        Package* packageCopy = new Package(*package);  // Using Package copy constructor
+        newContainer->addPackage(packageCopy);
+    }
+
+    // Copy custom variables
+    newContainer->setCustomVariables(m_customVariables);
+
+    return newContainer;
+}
+
 // Clear the package list and delete all packages
 void Container::clear() {
     if (!m_isRunningThroughPython) {  // Python handles the pointers not us

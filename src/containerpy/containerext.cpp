@@ -155,17 +155,79 @@ void ContainerExt::removeCustomVariable(HaulerType hauler,
 
 // Method to get a custom variable's value using std::string
 std::string ContainerExt::getCustomVariable(HaulerType hauler,
-                                         const std::string &key) const {
+                                            const std::string &key) const {
     QString qKey = QString::fromStdString(key);
-    QVariant qValue = mContainer->getCustomVariable(static_cast<ContainerCore::Container::HaulerType>(hauler), qKey);
+    QVariant qValue =
+        mContainer->getCustomVariable(
+            static_cast<ContainerCore::Container::HaulerType>(hauler), qKey);
 
-    if (qValue.typeId() == QMetaType::QString) {
-        return qValue.toString().toStdString();
-    } else if (qValue.typeId() == QMetaType::Int) {
-        return std::to_string(qValue.toInt());
-    } else if (qValue.typeId() == QMetaType::Double) {
-        return std::to_string(qValue.toDouble());
+    if (qValue.isNull() || !qValue.isValid()) {
+        return "";
     }
+
+    switch (qValue.typeId()) {
+    case QMetaType::QString:
+        return qValue.toString().toStdString();
+
+    case QMetaType::Int:
+    case QMetaType::LongLong:
+    case QMetaType::Short:
+    case QMetaType::UInt:
+    case QMetaType::ULongLong:
+    case QMetaType::UShort:
+        return std::to_string(qValue.toLongLong());
+
+    case QMetaType::Double:
+    case QMetaType::Float:
+        return std::to_string(qValue.toDouble());
+
+    case QMetaType::Bool:
+        return qValue.toBool() ? "true" : "false";
+
+    case QMetaType::QDateTime:
+        return qValue.toDateTime().toString(Qt::ISODate).toStdString();
+
+    case QMetaType::QDate:
+        return qValue.toDate().toString(Qt::ISODate).toStdString();
+
+    case QMetaType::QTime:
+        return qValue.toTime().toString(Qt::ISODate).toStdString();
+
+    case QMetaType::QByteArray:
+        return QString(qValue.toByteArray().toHex()).toStdString();
+
+    case QMetaType::QStringList: {
+        QStringList list = qValue.toStringList();
+        return list.join(", ").toStdString();
+    }
+    case QMetaType::QVariantList: {
+        QVariantList list = qValue.toList();
+        QStringList strList;
+        for (const QVariant& item : list) {
+            if (item.typeId() == QMetaType::QString) {
+                strList << QString("\"%1\"").arg(item.toString());
+            } else {
+                strList << item.toString();
+            }
+        }
+        return QString("[%1]").arg(strList.join(", ")).toStdString();
+    }
+    case QMetaType::QVariantMap: {
+        QVariantMap map = qValue.toMap();
+        QStringList pairs;
+        for (auto it = map.begin(); it != map.end(); ++it) {
+            QString value;
+            if (it.value().typeId() == QMetaType::QString) {
+                value = QString("\"%1\"").arg(it.value().toString());
+            } else {
+                value = it.value().toString();
+            }
+            pairs << QString("\"%1\": %2").arg(it.key(), value);
+        }
+        return QString("{%1}").arg(pairs.join(", ")).toStdString();
+    }
+    }
+
     return "Unsupported type";
 }
 
@@ -233,6 +295,11 @@ bool ContainerExt::removeMovementHistory(const std::string &history) {
 QJsonObject ContainerExt::toJson() const
 {
     return mContainer->toJson();
+}
+
+ContainerCore::Container *ContainerExt::copy()
+{
+    return mContainer->copy();
 }
 
 ContainerCore::Container *ContainerExt::getBaseContainer()
