@@ -1,20 +1,45 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
+include(GNUInstallDirs)
 
 # Find Qt dependencies
 find_dependency(Qt6 COMPONENTS Core Sql)
 
 # Include targets
-include("${CMAKE_CURRENT_LIST_DIR}/ContainerTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/${CMAKE_FIND_PACKAGE_NAME}Targets.cmake")
 
-# Set variables for imported targets
-set_and_check(CONTAINER_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
-set_and_check(CONTAINER_LIB_DIR "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+# Handle platform-specific paths
+# Use file(TO_CMAKE_PATH) to ensure proper path format across platforms
+file(TO_CMAKE_PATH "${PACKAGE_PREFIX_DIR}" NORMALIZED_PREFIX_DIR)
 
-# Add convenience target aliases if they don't exist
-if(NOT TARGET Container::Container AND TARGET Container::${FIND_PACKAGE_NAME})
-    add_library(Container::Container ALIAS Container::${FIND_PACKAGE_NAME})
+# Set up platform-specific paths
+if(WIN32)
+  # Windows typically has bin for DLLs and lib for import libraries
+  set(CONTAINER_INCLUDE_DIR "${NORMALIZED_PREFIX_DIR}/include")
+  set(CONTAINER_LIB_DIR "${NORMALIZED_PREFIX_DIR}/lib") 
+  set(CONTAINER_BIN_DIR "${NORMALIZED_PREFIX_DIR}/bin")
+else()
+  # Unix-like systems typically have libraries in lib or lib64
+  set(CONTAINER_INCLUDE_DIR "${NORMALIZED_PREFIX_DIR}/include")
+  set(CONTAINER_LIB_DIR "${NORMALIZED_PREFIX_DIR}/@CMAKE_INSTALL_LIBDIR@")
+  set(CONTAINER_BIN_DIR "${NORMALIZED_PREFIX_DIR}/bin")
 endif()
 
-check_required_components(${FIND_PACKAGE_NAME})
+# For backward compatibility - use these if you don't want to adapt existing code
+set(Container_INCLUDE_DIRS ${CONTAINER_INCLUDE_DIR})
+set(Container_LIBRARIES Container::Container)
+
+# Add convenience target aliases if they don't exist
+if(NOT TARGET Container::Container AND TARGET Container::${CMAKE_FIND_PACKAGE_NAME})
+    add_library(Container::Container ALIAS Container::${CMAKE_FIND_PACKAGE_NAME})
+endif()
+
+# Output configuration information when in verbose mode
+if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
+    message(STATUS "Found ${CMAKE_FIND_PACKAGE_NAME}: ${PACKAGE_PREFIX_DIR} (version: @PROJECT_VERSION@)")
+    message(STATUS "  Include directory: ${CONTAINER_INCLUDE_DIR}")
+    message(STATUS "  Library directory: ${CONTAINER_LIB_DIR}")
+endif()
+
+check_required_components(${CMAKE_FIND_PACKAGE_NAME})
