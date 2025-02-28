@@ -135,6 +135,12 @@ endif()
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+set(PACKAGE_PREFIX_DIR "${CMAKE_INSTALL_PREFIX}")
+set(PACKAGE_CMAKE_INSTALL_INCLUDEDIR "include")
+set(PACKAGE_CMAKE_INSTALL_LIBDIR "lib")
+set(PACKAGE_CMAKE_INSTALL_BINDIR "bin")
+
+
 # Generate package version file
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/ContainerConfigVersion.cmake"
@@ -147,7 +153,7 @@ configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/ContainerConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/ContainerConfig.cmake"
     INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/Container
-    PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
+    PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR CMAKE_INSTALL_BINDIR
 )
 
 # Install config files
