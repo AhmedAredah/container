@@ -20,90 +20,234 @@ Container::Container(const QJsonObject &json, QObject *parent)
     : QObject(parent)
 {
     // Initialize containerID
-    // Check for the existence of keys and validity of JSON before accessing them
     if (!json.contains(QStringLiteral("containerID")) ||
-        !json[QStringLiteral("containerID")].isString()) {
+        !json[QStringLiteral("containerID")].isString())
+    {
         throw std::invalid_argument("Invalid or missing 'containerID'");
     }
     m_containerID = json[QStringLiteral("containerID")].toString();
 
     // Initialize containerSize
-    if (!json.contains(QStringLiteral("containerSize")) ||
-        !json[QStringLiteral("containerSize")].isDouble())
+    if (!json.contains(QStringLiteral("containerSize")))
     {
-        throw std::invalid_argument("Invalid or missing 'containerSize'");
+        throw std::invalid_argument("Missing 'containerSize'");
     }
-    m_containerSize =
-        static_cast<ContainerSize>(
-        json[QStringLiteral("containerSize")].toInt());
-
-    if (json.contains(QStringLiteral("containerCurrentLocation")) &&
-        json[QStringLiteral("containerCurrentLocation")].isString()) {
-        m_containerCurrentLocation =
-            json[QStringLiteral("containerCurrentLocation")].toString();
+    if (json[QStringLiteral("containerSize")].isDouble() ||
+        json[QStringLiteral("containerSize")].isString())
+    {
+        // Handle both numeric and string values for containerSize
+        m_containerSize = static_cast<ContainerSize>(
+            json[QStringLiteral("containerSize")].toInt());
     } else {
-        m_containerCurrentLocation =
-            QStringLiteral("Unknown"); // Default if not provided or invalid
+        throw std::invalid_argument("'containerSize' must be "
+                                    "a number or string");
     }
 
-    if (!json.contains(QStringLiteral("addedTime")) ||
-        !json[QStringLiteral("addedTime")].isDouble()) {
-        throw std::invalid_argument("Invalid or missing 'addedTime'");
+    // Initialize containerCurrentLocation
+    if (json.contains(QStringLiteral("containerCurrentLocation")))
+    {
+        if (json[QStringLiteral("containerCurrentLocation")].isString())
+        {
+            m_containerCurrentLocation =
+                json[QStringLiteral("containerCurrentLocation")].toString();
+        } else if (json[QStringLiteral("containerCurrentLocation")].isNull())
+        {
+            m_containerCurrentLocation = QStringLiteral("Unknown");
+        }
     }
-    m_addedTime = json[QStringLiteral("addedTime")].isDouble();
+    else
+    {
+        m_containerCurrentLocation = QStringLiteral("Unknown");
+    }
+
+    // Handle addedTime with proper NaN/null handling
+    if (!json.contains(QStringLiteral("addedTime")))
+    {
+        throw std::invalid_argument("Missing 'addedTime'");
+    }
+
+    if (json[QStringLiteral("addedTime")].isNull())
+    {
+        // Handle null value (convert to NaN)
+        m_addedTime = std::numeric_limits<double>::quiet_NaN();
+    }
+    else if (json[QStringLiteral("addedTime")].isDouble())
+    {
+        // Normal numeric value
+        m_addedTime = json[QStringLiteral("addedTime")].toDouble();
+    }
+    else if (json[QStringLiteral("addedTime")].isString())
+    {
+        // Handle string values that might contain "NaN"
+        QString addedTimeStr = json[QStringLiteral("addedTime")].toString();
+        if (addedTimeStr.compare(QLatin1String("NaN"),
+                                 Qt::CaseInsensitive) == 0)
+        {
+            m_addedTime = std::numeric_limits<double>::quiet_NaN();
+        }
+        else
+        {
+            bool ok = false;
+            double value = addedTimeStr.toDouble(&ok);
+            if (ok)
+            {
+                m_addedTime = value;
+            }
+            else
+            {
+                m_addedTime = std::numeric_limits<double>::quiet_NaN();
+            }
+        }
+    }
+    else
+    {
+        // Default to NaN for any other type
+        m_addedTime = std::numeric_limits<double>::quiet_NaN();
+    }
+
+    // Handle optional leavingTime with NaN/null handling
+    if (json.contains(QStringLiteral("leavingTime")))
+    {
+        if (json[QStringLiteral("leavingTime")].isNull())
+        {
+            m_leavingTime = std::numeric_limits<double>::quiet_NaN();
+        } else if (json[QStringLiteral("leavingTime")].isDouble())
+        {
+            m_leavingTime = json[QStringLiteral("leavingTime")].toDouble();
+        }
+        else if (json[QStringLiteral("leavingTime")].isString())
+        {
+            QString leavingTimeStr =
+                json[QStringLiteral("leavingTime")].toString();
+            if (leavingTimeStr.compare(QLatin1String("NaN"),
+                                       Qt::CaseInsensitive) == 0) {
+                m_leavingTime = std::numeric_limits<double>::quiet_NaN();
+            }
+            else
+            {
+                bool ok = false;
+                double value = leavingTimeStr.toDouble(&ok);
+                if (ok)
+                {
+                    m_leavingTime = value;
+                }
+                else
+                {
+                    m_leavingTime = std::numeric_limits<double>::quiet_NaN();
+                }
+            }
+        }
+        else
+        {
+            m_leavingTime = std::numeric_limits<double>::quiet_NaN();
+        }
+    }
+    else
+    {
+        // Default to NaN if not provided
+        m_leavingTime = std::numeric_limits<double>::quiet_NaN();
+    }
 
     // Check and initialize containerNextDestinations from JSON array
-    if (json.contains(QStringLiteral("containerNextDestinations")) &&
-        json[QStringLiteral("containerNextDestinations")].isArray()) {
-        QJsonArray nextDestinationsArray =
-            json[QStringLiteral("containerNextDestinations")].toArray();
-        for (const QJsonValue &value : nextDestinationsArray) {
-            if (value.isString()) {
-                m_containerNextDestinations.append(value.toString());
+    if (json.contains(QStringLiteral("containerNextDestinations")))
+    {
+        if (json[QStringLiteral("containerNextDestinations")].isArray())
+        {
+            QJsonArray nextDestinationsArray =
+                json[QStringLiteral("containerNextDestinations")].toArray();
+            for (const QJsonValue &value : nextDestinationsArray)
+            {
+                if (value.isString())
+                {
+                    m_containerNextDestinations.append(value.toString());
+                }
             }
+        }
+        else if (json[QStringLiteral("containerNextDestinations")].isNull())
+        {
+            // Handle null array - leave as empty vector
         }
     }
 
     // Initialize containerMovementHistory from JSON array
-    // if available and valid
-    if (json.contains(QStringLiteral("containerMovementHistory")) &&
-        json[QStringLiteral("containerMovementHistory")].isArray()) {
-        QJsonArray movementHistoryArray =
-            json[QStringLiteral("containerMovementHistory")].toArray();
-        for (const QJsonValue &value : movementHistoryArray) {
-            if (value.isString()) {
-                m_containerMovementHistory.append(value.toString());
+    if (json.contains(QStringLiteral("containerMovementHistory")))
+    {
+        if (json[QStringLiteral("containerMovementHistory")].isArray())
+        {
+            QJsonArray movementHistoryArray =
+                json[QStringLiteral("containerMovementHistory")].toArray();
+            for (const QJsonValue &value : movementHistoryArray)
+            {
+                if (value.isString())
+                {
+                    m_containerMovementHistory.append(value.toString());
+                }
             }
+        }
+        else if (json[QStringLiteral("containerMovementHistory")].isNull())
+        {
+            // Handle null array - leave as empty vector
         }
     }
 
     // Initialize packages
-    if (json.contains(QStringLiteral("packages")) &&
-        json[QStringLiteral("packages")].isArray()) {
-        QJsonArray packagesArray =
-            json[QStringLiteral("packages")].toArray();
-        for (const QJsonValue &value : packagesArray) {
-            if (value.isObject()) {
-                Package *package = new Package(value.toObject(), this);
-                m_packages.append(package);
+    if (json.contains(QStringLiteral("packages")))
+    {
+        if (json[QStringLiteral("packages")].isArray())
+        {
+            QJsonArray packagesArray =
+                json[QStringLiteral("packages")].toArray();
+            for (const QJsonValue &value : packagesArray)
+            {
+                if (value.isObject())
+                {
+                    try
+                    {
+                        Package *package = new Package(value.toObject(), this);
+                        m_packages.append(package);
+                    }
+                    catch (const std::exception &e)
+                    {
+                        qWarning() << "Failed to create package:" << e.what();
+                        // Continue processing other packages
+                    }
+                }
             }
+        }
+        else if (json[QStringLiteral("packages")].isNull())
+        {
+            // Handle null array - leave as empty vector
         }
     }
 
     // Initialize customVariables
-    if (json.contains(QStringLiteral("customVariables")) &&
-        json[QStringLiteral("customVariables")].isObject()) {
-        QJsonObject customVariablesObject =
-            json[QStringLiteral("customVariables")].toObject();
-        for (const QString &key : customVariablesObject.keys()) {
-            HaulerType hauler = static_cast<HaulerType>(key.toInt());
-            QJsonObject haulerObject = customVariablesObject[key].toObject();
-
-            QVariantMap variables;
-            for (const QString &varKey : haulerObject.keys()) {
-                variables.insert(varKey, haulerObject[varKey].toVariant());
+    if (json.contains(QStringLiteral("customVariables")))
+    {
+        if (json[QStringLiteral("customVariables")].isObject())
+        {
+            QJsonObject customVariablesObject =
+                json[QStringLiteral("customVariables")].toObject();
+            for (const QString &key : customVariablesObject.keys())
+            {
+                if (customVariablesObject[key].isObject())
+                {
+                    HaulerType hauler =
+                        static_cast<HaulerType>(key.toInt());
+                    QJsonObject haulerObject =
+                        customVariablesObject[key].toObject();
+                    QVariantMap variables;
+                    for (const QString &varKey : haulerObject.keys())
+                    {
+                        variables.insert(varKey,
+                                         haulerObject[varKey].toVariant());
+                    }
+                    m_customVariables[hauler] = variables;
+                }
             }
-            m_customVariables[hauler] = variables;
+        }
+        else if (json[QStringLiteral("customVariables")].isNull())
+        {
+            // Handle null object - leave as empty map
         }
     }
 }
@@ -380,11 +524,31 @@ QJsonObject Container::toJson() const
         static_cast<int>(m_containerSize);
     jsonObject[QStringLiteral("containerCurrentLocation")] =
         m_containerCurrentLocation;
-    jsonObject[QStringLiteral("addedTime")] = m_addedTime;
+
+    // Handle NaN values for addedTime
+    if (std::isnan(m_addedTime))
+    {
+        jsonObject[QStringLiteral("addedTime")] = QJsonValue::Null;
+    }
+    else
+    {
+        jsonObject[QStringLiteral("addedTime")] = m_addedTime;
+    }
+
+    // Handle NaN values for leavingTime if it's included in the JSON
+    if (std::isnan(m_leavingTime))
+    {
+        jsonObject[QStringLiteral("leavingTime")] = QJsonValue::Null;
+    }
+    else
+    {
+        jsonObject[QStringLiteral("leavingTime")] = m_leavingTime;
+    }
 
     // Convert next destinations to QJsonArray
     QJsonArray nextDestinationsArray;
-    for (const QString &destination : m_containerNextDestinations) {
+    for (const QString &destination : m_containerNextDestinations)
+    {
         nextDestinationsArray.append(QJsonValue(destination));
     }
     jsonObject[QStringLiteral("containerNextDestinations")] =
@@ -392,7 +556,8 @@ QJsonObject Container::toJson() const
 
     // Convert movement history to QJsonArray
     QJsonArray movementHistoryArray;
-    for (const QString &history : m_containerMovementHistory) {
+    for (const QString &history : m_containerMovementHistory)
+    {
         movementHistoryArray.append(QJsonValue(history));
     }
     jsonObject[QStringLiteral("containerMovementHistory")] =
@@ -400,8 +565,10 @@ QJsonObject Container::toJson() const
 
     // Convert packages to QJsonArray
     QJsonArray packagesArray;
-    for (const Package* package : m_packages) {
-        if (package) {
+    for (const Package* package : m_packages)
+    {
+        if (package)
+        {
             packagesArray.append(package->toJson());
         }
     }
@@ -410,12 +577,23 @@ QJsonObject Container::toJson() const
     // Convert customVariables to QJsonObject
     QJsonObject customVariablesObject;
     for (auto it = m_customVariables.constBegin();
-         it != m_customVariables.constEnd(); ++it) {
+         it != m_customVariables.constEnd(); ++it)
+    {
         QJsonObject haulerObject;
         for (auto varIt = it.value().constBegin();
-             varIt != it.value().constEnd(); ++varIt) {
-            haulerObject[varIt.key()] =
-                QJsonValue::fromVariant(varIt.value());
+             varIt != it.value().constEnd(); ++varIt)
+        {
+            // Handle NaN values in custom variables
+            QVariant value = varIt.value();
+            if (value.typeId() ==
+                    QMetaType::Double && std::isnan(value.toDouble()))
+            {
+                haulerObject[varIt.key()] = QJsonValue::Null;
+            }
+            else
+            {
+                haulerObject[varIt.key()] = QJsonValue::fromVariant(value);
+            }
         }
         customVariablesObject[QString::number(static_cast<int>(it.key()))] =
             haulerObject;
