@@ -396,6 +396,10 @@ void Container::setContainerCurrentLocation(const QString &location) {
             emit containerMovementHistoryChanged();
         }
 
+        // If this location was in the next destinations list, remove it
+        // since we've now arrived there
+        removeDestination(location);
+
         // Emit the location change signal
         emit containerCurrentLocationChanged();
     }

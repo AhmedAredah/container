@@ -191,6 +191,10 @@ PYBIND11_MODULE(ContainerPy, m) {
         .def("get_container_movement_history",
              &ContainerExt::getContainerMovementHistory,
              "Get the container's movement history as a list of strings.")
+        .def("add_container_destination", &ContainerExt::addDestination,
+            "Add a destination to a container's destinations list")
+        .def("remove_container_destination", &ContainerExt::removeDestination,
+            "Remove a destination from a container's destination list")
         .def("to_json", [](ContainerExt &self) {
                 return ContainerExtToPyDict(self);
             }, "Extract Container information to a Python dictionary")
