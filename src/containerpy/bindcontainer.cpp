@@ -111,7 +111,8 @@ QJsonObject PyDictToQJsonObject(const py::dict &pyDict) {
 PYBIND11_MODULE(ContainerPy, m) {
     m.doc() = "Pybind11 plugin for Container library";
 
-    std::cout << "ContainerPy is developed by Ahmed Aredah!\nAll rights reserved!" << std::endl;
+    std::cout << "ContainerPy is an open source effort!\n"
+                 "For errors, suggestions or concerns, visit https://github.com/AhmedAredah/container!" << std::endl;
 
 
     py::class_<PackageExt>(m, "Package")
