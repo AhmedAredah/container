@@ -259,11 +259,10 @@ public:
     /**
     * @brief Creates containers from a JSON object
     * @param json JSON object containing container data
-    * @param parent Optional parent QObject for memory management
     * @return Vector of created containers
     * @note The caller is responsible for memory management of returned containers
     */
-    static QVector<Container*> loadContainersFromJson(const QJsonObject &json, QObject *parent = nullptr);
+    static QVector<Container*> loadContainersFromJson(const QJsonObject &json);
 
 
     /**
