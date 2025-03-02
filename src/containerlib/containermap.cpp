@@ -696,9 +696,6 @@ QVector<Container *> ContainerMap::dequeueContainersByAddedTime(const QString &c
 
                 if (conditionMet) {
                     matchingContainers.append(container);
-                    if (it.value() && !m_isRunningThroughPython) {
-                        delete it.value(); // Ensure memory is cleaned
-                    }
                     it = m_containers.erase(it);
                 } else {
                     ++it;
@@ -1102,9 +1099,6 @@ QVector<Container *> ContainerMap::dequeueContainersByLeavingTime(const QString 
 
                 if (conditionMet) {
                     matchingContainers.append(container);
-                    if (it.value() && !m_isRunningThroughPython) {
-                        delete it.value(); // Ensure memory is cleaned
-                    }
                     it = m_containers.erase(it);
                 } else {
                     ++it;
@@ -1200,9 +1194,6 @@ ContainerMap::dequeueContainersByNextDestination(const QString &destination)
             if (container->getContainerNextDestinations().
                 contains(destination)) {
                 matchingContainers.append(container);
-                if (it.value() && !m_isRunningThroughPython) {
-                    delete it.value(); // Ensure memory is cleaned
-                }
                 it = m_containers.erase(it);
             } else {
                 ++it;
@@ -1255,7 +1246,7 @@ ContainerMap::countContainersByNextDestination(const QString &destination)
 }
 
 QVector<Container *>
-ContainerMap::loadContainersFromJson(const QJsonObject &json, QObject *parent)
+ContainerMap::loadContainersFromJson(const QJsonObject &json)
 {
     QVector<Container*> containers;
 
@@ -1281,7 +1272,7 @@ ContainerMap::loadContainersFromJson(const QJsonObject &json, QObject *parent)
 
         try {
             // Create a new Container from the JSON object
-            Container *container = new Container(containerObj, parent);
+            Container *container = new Container(containerObj, nullptr);
             containers.append(container);
         } catch (const std::invalid_argument &e) {
             qWarning() << "Invalid container data:" << e.what();
