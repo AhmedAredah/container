@@ -67,25 +67,81 @@ QJsonObject PyDictToQJsonObject(const py::dict &pyDict) {
         QString key = QString::fromStdString(py::str(item.first).cast<std::string>());
         py::object value = py::reinterpret_borrow<py::object>(item.second);
 
+        // Handle None/null values
+        if (value.is_none()) {
+            jsonObj[key] = QJsonValue::Null;
+            continue;
+        }
+
+        // Special handling for customVariables which has numeric keys
+        if (key == "customVariables" && py::isinstance<py::dict>(value)) {
+            QJsonObject customVarsObj;
+            py::dict customVarsDict = value.cast<py::dict>();
+
+            for (auto haulerItem : customVarsDict) {
+                // Convert hauler type (which could be int or string) to string key
+                QString haulerKey;
+                py::object haulerKey_obj = py::reinterpret_borrow<py::object>(haulerItem.first);
+
+                if (py::isinstance<py::int_>(haulerKey_obj)) {
+                    haulerKey = QString::number(haulerKey_obj.cast<int>());
+                } else {
+                    haulerKey = QString::fromStdString(py::str(haulerKey_obj).cast<std::string>());
+                }
+
+                // Handle the variables for this hauler
+                py::object haulerValue = py::reinterpret_borrow<py::object>(haulerItem.second);
+                if (py::isinstance<py::dict>(haulerValue)) {
+                    customVarsObj[haulerKey] = PyDictToQJsonObject(haulerValue.cast<py::dict>());
+                }
+            }
+            jsonObj[key] = customVarsObj;
+            continue;
+        }
+
         // Handle primitive types and nested objects properly
         if (py::isinstance<py::bool_>(value)) {
             jsonObj[key] = value.cast<bool>();
         } else if (py::isinstance<py::int_>(value)) {
             jsonObj[key] = value.cast<int>();
         } else if (py::isinstance<py::float_>(value)) {
-            jsonObj[key] = value.cast<double>();
+            // Special handling for NaN values
+            double doubleVal = value.cast<double>();
+            if (std::isnan(doubleVal)) {
+                jsonObj[key] = QJsonValue::Null;
+            } else {
+                jsonObj[key] = doubleVal;
+            }
         } else if (py::isinstance<py::str>(value)) {
-            jsonObj[key] = QString::fromStdString(value.cast<std::string>());
+            QString strVal = QString::fromStdString(value.cast<std::string>());
+            // Check if the string is "NaN" and handle appropriately
+            if (strVal.compare(QLatin1String("NaN"), Qt::CaseInsensitive) == 0) {
+                jsonObj[key] = QJsonValue::Null;
+            } else {
+                jsonObj[key] = strVal;
+            }
         } else if (py::isinstance<py::list>(value)) {
             QJsonArray jsonArray;
             for (py::handle item : value) {
                 py::object item_obj = py::reinterpret_borrow<py::object>(item);
+
+                // Handle None/null in arrays
+                if (item_obj.is_none()) {
+                    jsonArray.append(QJsonValue::Null);
+                    continue;
+                }
+
                 if (py::isinstance<py::str>(item_obj)) {
                     jsonArray.append(QString::fromStdString(item_obj.cast<std::string>()));
                 } else if (py::isinstance<py::int_>(item_obj)) {
                     jsonArray.append(item_obj.cast<int>());
                 } else if (py::isinstance<py::float_>(item_obj)) {
-                    jsonArray.append(item_obj.cast<double>());
+                    double doubleVal = item_obj.cast<double>();
+                    if (std::isnan(doubleVal)) {
+                        jsonArray.append(QJsonValue::Null);
+                    } else {
+                        jsonArray.append(doubleVal);
+                    }
                 } else if (py::isinstance<py::bool_>(item_obj)) {
                     jsonArray.append(item_obj.cast<bool>());
                 } else if (py::isinstance<py::dict>(item_obj)) {
@@ -93,6 +149,7 @@ QJsonObject PyDictToQJsonObject(const py::dict &pyDict) {
                     jsonArray.append(PyDictToQJsonObject(item_obj.cast<py::dict>()));
                 } else {
                     qWarning() << "Unsupported data type in list for key:" << key;
+                    jsonArray.append(QJsonValue::Null);
                 }
             }
             jsonObj[key] = jsonArray;
@@ -100,13 +157,11 @@ QJsonObject PyDictToQJsonObject(const py::dict &pyDict) {
             jsonObj[key] = PyDictToQJsonObject(value.cast<py::dict>());
         } else {
             qWarning() << "Unsupported data type for key:" << key;
+            jsonObj[key] = QJsonValue::Null;  // Use null for unsupported types
         }
     }
     return jsonObj;
 }
-
-
-
 
 PYBIND11_MODULE(ContainerPy, m) {
     m.doc() = "Pybind11 plugin for Container library";
