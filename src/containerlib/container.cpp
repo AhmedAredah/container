@@ -203,7 +203,7 @@ Container::Container(const QJsonObject &json, QObject *parent)
                 {
                     try
                     {
-                        Package *package = new Package(value.toObject(), this);
+                        Package *package = new Package(value.toObject());
                         m_packages.append(package);
                     }
                     catch (const std::exception &e)
