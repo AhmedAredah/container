@@ -80,7 +80,7 @@ ContainerMap::ContainerMap(const QJsonObject &json, QObject *parent)
                     try {
                         QJsonObject containerObject = value.toObject();
                         Container *container =
-                            new Container(containerObject, this);
+                            new Container(containerObject);
                         addContainerUtil(container->getContainerID(),
                                          container);
                     } catch (const std::exception &e) {
@@ -190,7 +190,7 @@ void ContainerMap::addContainers(const QJsonObject &json, double addingTime,
 
         try {
             // Use the existing JSON constructor to create a Container
-            Container *container = new Container(containerObj, this);
+            Container *container = new Container(containerObj);
 
             // Add the container to the ContainerMap
             this->addContainerUtil(container->getContainerID(), container,
