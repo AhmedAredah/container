@@ -47,9 +47,17 @@ check_command "Pip dependencies installation"
 # Detect platform
 if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     DEFAULT_QT_PATH="/home/ahmed/Qt/6.8.0/gcc_64/lib/cmake/Qt6"
+    DEFAULT_QT_TOOLS="/home/ahmed/Qt/Tools/CMake/bin"
     NUM_CORES=$(nproc)
 elif [[ "$OSTYPE" == "darwin"* ]]; then
-    DEFAULT_QT_PATH="/Users/ahmedaredah/Qt/6.8.0/macos/lib/cmake/Qt6"
+    # Check if Qt6 is installed via Homebrew first
+    if brew list qt6 &>/dev/null; then
+        DEFAULT_QT_PATH="$(brew --prefix qt6)/lib/cmake/Qt6"
+        DEFAULT_QT_TOOLS="$(brew --prefix qt6)/bin"
+    else
+        DEFAULT_QT_PATH="/Users/ahmedaredah/Qt/6.8.0/macos/lib/cmake/Qt6"
+        DEFAULT_QT_TOOLS="/Users/ahmedaredah/Qt/6.8.0/macos/bin"
+    fi
     NUM_CORES=$(sysctl -n hw.ncpu)
 else
     echo "Unsupported OS."
@@ -62,14 +70,22 @@ USE_DEFAULT_QT_PATH=${USE_DEFAULT_QT_PATH:-y}
 
 if [[ "$USE_DEFAULT_QT_PATH" == "y" ]]; then
     QT_PATH=$DEFAULT_QT_PATH
+    QT_TOOLS=$DEFAULT_QT_TOOLS
 else
     read -p "Enter custom Qt path: " QT_PATH
-    if [[ -z "$QT_PATH" ]]; then
-        echo "Error: No Qt path provided. Exiting."
+    read -p "Enter custom Qt tools path: " QT_TOOLS
+    if [[ -z "$QT_PATH" ]] || [[ -z "$QT_TOOLS" ]]; then
+        echo "Error: Qt paths not provided. Exiting."
         exit 1
     fi
 fi
-echo "Using Qt path: $QT_PATH"
+
+# Export Qt-related environment variables
+export QT_CMAKE_PATH="$(dirname $QT_PATH)"
+export QT_TOOLS_PATH="$QT_TOOLS"
+
+echo "Using Qt CMAKE path: $QT_CMAKE_PATH"
+echo "Using Qt tools path: $QT_TOOLS_PATH"
 
 # Get pybind11 cmake directory
 PYBIND11_DIR=$($PYTHON_PATH -c "import pybind11; print(pybind11.get_cmake_dir())")
@@ -214,9 +230,27 @@ fi
 # Build Python wheel
 if [[ "$BUILD_WHL" == "y" ]]; then
     echo "Building Python wheel file..."
-    $PYTHON_PATH setup.py build_ext --inplace
-    $PYTHON_PATH setup.py bdist_wheel
-    check_command "Python wheel build"
+    # Set deployment target for macOS only
+    if [[ "$OSTYPE" == "darwin"* ]]; then
+        MACOSX_DEPLOYMENT_TARGET=$($PYTHON_PATH -c 'import platform; print(".".join(platform.mac_ver()[0].split(".")[:2]))')
+        echo "Using macOS deployment target: $MACOSX_DEPLOYMENT_TARGET"
+        
+        # Get Python paths
+        PYTHON_INCLUDE=$($PYTHON_PATH -c "import sysconfig; print(sysconfig.get_path('include'))")
+        PYTHON_LIBDIR=$($PYTHON_PATH -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+        
+        sudo -E MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET  QT_CMAKE_PATH="$QT_CMAKE_PATH"  QT_TOOLS_PATH="$QT_TOOLS_PATH" Python_INCLUDE_DIRS="$PYTHON_INCLUDE" Python_LIBRARIES="$PYTHON_LIBDIR" $PYTHON_PATH setup.py build_ext --inplace
+            
+        sudo -E MACOSX_DEPLOYMENT_TARGET=$MACOSX_DEPLOYMENT_TARGET QT_CMAKE_PATH="$QT_CMAKE_PATH" QT_TOOLS_PATH="$QT_TOOLS_PATH" Python_INCLUDE_DIRS="$PYTHON_INCLUDE" Python_LIBRARIES="$PYTHON_LIBDIR" $PYTHON_PATH setup.py bdist_wheel
+    else
+        # Similar changes for non-macOS platforms
+        PYTHON_INCLUDE=$($PYTHON_PATH -c "import sysconfig; print(sysconfig.get_path('include'))")
+        PYTHON_LIBDIR=$($PYTHON_PATH -c "import sysconfig; print(sysconfig.get_config_var('LIBDIR'))")
+        
+        sudo -E QT_CMAKE_PATH="$QT_CMAKE_PATH" QT_TOOLS_PATH="$QT_TOOLS_PATH" Python_INCLUDE_DIRS="$PYTHON_INCLUDE" Python_LIBRARIES="$PYTHON_LIBDIR" $PYTHON_PATH setup.py build_ext --inplace
+            
+        sudo -E QT_CMAKE_PATH="$QT_CMAKE_PATH" QT_TOOLS_PATH="$QT_TOOLS_PATH" Python_INCLUDE_DIRS="$PYTHON_INCLUDE" Python_LIBRARIES="$PYTHON_LIBDIR" $PYTHON_PATH setup.py bdist_wheel
+    fi
 fi
 
 # Install Python wheel

@@ -8,14 +8,30 @@ set(LIB_NAME ${Container_NAME})
 find_package(QT NAMES Qt6 REQUIRED COMPONENTS Core Sql)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core Sql)
 
+# Define header files with absolute paths
 set(HEADERS
-    ../../include//containerLib/package.h
-    ../../include//containerLib/container.h
-    ../../include//containerLib/containermap.h
+    "${PROJECT_SOURCE_DIR}/include/containerLib/package.h"
+    "${PROJECT_SOURCE_DIR}/include/containerLib/container.h"  
+    "${PROJECT_SOURCE_DIR}/include/containerLib/containermap.h"
 )
 
+# Create output directory for moc files
+file(MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/moc)
+
+# Set MOC directory
+set(CMAKE_AUTOMOC_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/moc)
+
+# Generate MOC files with explicit output path
+foreach(header ${HEADERS})
+    get_filename_component(filename ${header} NAME_WE)
+    qt6_wrap_cpp(MOC_SOURCES 
+        ${header}
+        OPTIONS -o ${CMAKE_CURRENT_BINARY_DIR}/moc/moc_${filename}.cpp
+    )
+endforeach()
+
 # Ensure that MOC is enabled for Qt classes
-qt6_wrap_cpp(MOC_SOURCES ${HEADERS})
+# qt6_wrap_cpp(MOC_SOURCES ${HEADERS})
 
 
 # Define source files with proper paths
@@ -31,6 +47,16 @@ add_library(${LIB_NAME} ${SOURCES})
 
 # Add alias for use in other targets
 add_library(${LIB_NAME}::${LIB_NAME} ALIAS ${LIB_NAME})
+
+# Set include directories using BUILD_INTERFACE and INSTALL_INTERFACE
+target_include_directories(${LIB_NAME}
+    PUBLIC
+        $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
+        $<INSTALL_INTERFACE:include>
+    PRIVATE
+        ${CMAKE_CURRENT_BINARY_DIR}/moc
+)
 
 # Generate export header
 include(GenerateExportHeader)
