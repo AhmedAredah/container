@@ -371,7 +371,7 @@ public:
     * @param container Container to serialize
     * @return Reference to output stream
     */
-    friend QDataStream &operator<<(QDataStream &out, const Container &container);
+    friend CONTAINER_EXPORT QDataStream &operator<<(QDataStream &out, const Container &container);
 
     /**
     * @brief Deserialization operator for Container class
@@ -379,7 +379,7 @@ public:
     * @param container Container to deserialize into
     * @return Reference to input stream
     */
-    friend QDataStream &operator>>(QDataStream &in, Container &container);
+    friend CONTAINER_EXPORT QDataStream &operator>>(QDataStream &in, Container &container);
 
 signals:
 

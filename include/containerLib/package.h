@@ -129,7 +129,7 @@ public:
      * @param package Package to serialize
      * @return Reference to the output stream
      */
-    friend QDataStream &operator<<(QDataStream &out, const Package &package);
+    friend CONTAINER_EXPORT QDataStream &operator<<(QDataStream &out, const Package &package);
 
     /**
      * @brief Deserialization operator
@@ -137,7 +137,7 @@ public:
      * @param package Package to deserialize into
      * @return Reference to the input stream
      */
-    friend QDataStream &operator>>(QDataStream &in, Package &package);
+    friend CONTAINER_EXPORT QDataStream &operator>>(QDataStream &in, Package &package);
 
 signals:
 

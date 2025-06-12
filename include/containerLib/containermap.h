@@ -271,7 +271,7 @@ public:
     * @param containerMap ContainerMap to serialize
     * @return Reference to the output stream
     */
-    friend QDataStream &operator<<(QDataStream &out, const ContainerMap &containerMap);
+    friend CONTAINER_EXPORT QDataStream &operator<<(QDataStream &out, const ContainerMap &containerMap);
 
     /**
     * @brief Deserialization operator for ContainerMap
@@ -279,7 +279,7 @@ public:
     * @param containerMap ContainerMap to deserialize into
     * @return Reference to the input stream
     */
-    friend QDataStream &operator>>(QDataStream &in, ContainerMap &containerMap);
+    friend CONTAINER_EXPORT QDataStream &operator>>(QDataStream &in, ContainerMap &containerMap);
 
     /**
     * @brief Converts the ContainerMap to a QVariant
