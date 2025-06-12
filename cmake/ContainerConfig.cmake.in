@@ -21,6 +21,18 @@ else()
     set(CONTAINER_BIN_DIR "@PACKAGE_CMAKE_INSTALL_BINDIR@")
 endif()
 
+# Set configuration-specific properties for the imported target
+if(TARGET Container::Container)
+    # Set debug postfix to match the library naming convention
+    set_target_properties(Container::Container PROPERTIES
+        DEBUG_POSTFIX "d"
+        IMPORTED_IMPLIB_DEBUG "${CONTAINER_LIB_DIR}/Containerd.lib"
+        IMPORTED_LOCATION_DEBUG "${CONTAINER_BIN_DIR}/Containerd.dll"
+        IMPORTED_IMPLIB_RELEASE "${CONTAINER_LIB_DIR}/Container.lib"
+        IMPORTED_LOCATION_RELEASE "${CONTAINER_BIN_DIR}/Container.dll"
+    )
+endif()
+
 # Common interface for all users regardless of compiler
 set(Container_INCLUDE_DIRS ${CONTAINER_INCLUDE_DIR})
 set(Container_LIBRARIES Container::Container)
