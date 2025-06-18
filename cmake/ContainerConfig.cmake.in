@@ -23,14 +23,94 @@ endif()
 
 # Set configuration-specific properties for the imported target
 if(TARGET Container::Container)
-    # Set debug postfix to match the library naming convention
+    # Debug what was already set by the targets file
+    get_target_property(EXISTING_CONFIGS Container::Container IMPORTED_CONFIGURATIONS)
+    get_target_property(EXISTING_DEBUG_LOCATION Container::Container IMPORTED_LOCATION_DEBUG)
+    get_target_property(EXISTING_RELEASE_LOCATION Container::Container IMPORTED_LOCATION_RELEASE)
+    
+    message(STATUS "Container target analysis:")
+    message(STATUS "  Existing configurations: ${EXISTING_CONFIGS}")
+    message(STATUS "  Existing debug location: ${EXISTING_DEBUG_LOCATION}")
+    message(STATUS "  Existing release location: ${EXISTING_RELEASE_LOCATION}")
+    
+    # Set or update configuration-specific properties
     set_target_properties(Container::Container PROPERTIES
-        DEBUG_POSTFIX "d"
+        # Available configurations (use exact case)
+        IMPORTED_CONFIGURATIONS "Debug;Release"
+        
+        # Debug configuration
         IMPORTED_IMPLIB_DEBUG "${CONTAINER_LIB_DIR}/Containerd.lib"
         IMPORTED_LOCATION_DEBUG "${CONTAINER_BIN_DIR}/Containerd.dll"
+        
+        # Release configuration  
         IMPORTED_IMPLIB_RELEASE "${CONTAINER_LIB_DIR}/Container.lib"
         IMPORTED_LOCATION_RELEASE "${CONTAINER_BIN_DIR}/Container.dll"
+        
+        # Configuration mapping with exact case
+        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release"
+        MAP_IMPORTED_CONFIG_MINSIZEREL "Release"
     )
+    
+    # For single-config generators, set appropriate defaults
+    if(NOT CMAKE_CONFIGURATION_TYPES)
+        # Single-config generator (Ninja, Unix Makefiles)
+        if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+            set_target_properties(Container::Container PROPERTIES
+                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Containerd.dll"
+                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Containerd.lib"
+            )
+            message(STATUS "  Single-config Debug: using debug libraries")
+        elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
+            set_target_properties(Container::Container PROPERTIES
+                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+            )
+            message(STATUS "  Single-config Release: using release libraries")
+        elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
+            # Map to Release
+            set_target_properties(Container::Container PROPERTIES
+                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+            )
+            message(STATUS "  Single-config RelWithDebInfo: using release libraries")
+        elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
+            # Map to Release
+            set_target_properties(Container::Container PROPERTIES
+                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+            )
+            message(STATUS "  Single-config MinSizeRel: using release libraries")
+        else()
+            # Default to Release for unknown build types
+            set_target_properties(Container::Container PROPERTIES
+                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+            )
+            message(STATUS "  Single-config Unknown (${CMAKE_BUILD_TYPE}): defaulting to release libraries")
+        endif()
+    else()
+        # Multi-config generator (Visual Studio, Xcode)
+        message(STATUS "  Multi-config generator: configurations resolved at build time")
+        
+        # Verify the configuration mapping was set correctly
+        get_target_property(MAP_RELWITHDEBINFO Container::Container MAP_IMPORTED_CONFIG_RELWITHDEBINFO)
+        get_target_property(MAP_MINSIZEREL Container::Container MAP_IMPORTED_CONFIG_MINSIZEREL)
+        message(STATUS "  Configuration mapping - RelWithDebInfo: ${MAP_RELWITHDEBINFO}")
+        message(STATUS "  Configuration mapping - MinSizeRel: ${MAP_MINSIZEREL}")
+    endif()
+    
+    # Final verification - show what will be used
+    get_target_property(FINAL_DEBUG_LOCATION Container::Container IMPORTED_LOCATION_DEBUG)
+    get_target_property(FINAL_RELEASE_LOCATION Container::Container IMPORTED_LOCATION_RELEASE)
+    get_target_property(FINAL_GENERIC_LOCATION Container::Container IMPORTED_LOCATION)
+    
+    message(STATUS "Final Container target configuration:")
+    message(STATUS "  Debug location: ${FINAL_DEBUG_LOCATION}")
+    message(STATUS "  Release location: ${FINAL_RELEASE_LOCATION}")
+    message(STATUS "  Generic location: ${FINAL_GENERIC_LOCATION}")
+    
+else()
+    message(WARNING "Container::Container target not found when configuring properties!")
 endif()
 
 # Common interface for all users regardless of compiler
@@ -40,6 +120,7 @@ set(Container_LIBRARIES Container::Container)
 # The target-based approach is compiler-agnostic
 if(NOT TARGET Container::Container AND TARGET Container::${FIND_PACKAGE_NAME})
     add_library(Container::Container ALIAS Container::${FIND_PACKAGE_NAME})
+    message(STATUS "Created Container::Container alias for Container::${FIND_PACKAGE_NAME}")
 endif()
 
 # Output configuration information for debugging
@@ -47,6 +128,43 @@ if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
     message(STATUS "Found ${CMAKE_FIND_PACKAGE_NAME}: ${PACKAGE_PREFIX_DIR} (version: @PROJECT_VERSION@)")
     message(STATUS "  Include directory: ${CONTAINER_INCLUDE_DIR}")
     message(STATUS "  Library directory: ${CONTAINER_LIB_DIR}")
+    message(STATUS "  Binary directory: ${CONTAINER_BIN_DIR}")
+    message(STATUS "  Generator type: ${CMAKE_GENERATOR}")
+    
+    if(CMAKE_CONFIGURATION_TYPES)
+        message(STATUS "  Build configurations: ${CMAKE_CONFIGURATION_TYPES}")
+        message(STATUS "  Note: Actual configuration determined at build time")
+    else()
+        message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
+        if(TARGET Container::Container)
+            get_target_property(CURRENT_LOCATION Container::Container IMPORTED_LOCATION)
+            message(STATUS "  Selected library: ${CURRENT_LOCATION}")
+        endif()
+    endif()
+    
+    # Show generator expression examples
+    if(TARGET Container::Container)
+        message(STATUS "Generator expressions for Container::Container:")
+        message(STATUS "  \$<TARGET_FILE:Container::Container> - resolves to actual DLL at build time")
+        message(STATUS "  \$<TARGET_LINKER_FILE:Container::Container> - resolves to import lib at build time")
+    endif()
 endif()
 
 check_required_components(${CMAKE_FIND_PACKAGE_NAME})
+
+# Additional validation
+if(TARGET Container::Container)
+    # Ensure the target has the required properties
+    get_target_property(CONTAINER_TYPE Container::Container TYPE)
+    if(NOT CONTAINER_TYPE STREQUAL "SHARED_LIBRARY")
+        message(WARNING "Container::Container is not a SHARED_LIBRARY target (type: ${CONTAINER_TYPE})")
+    endif()
+    
+    # Check if files exist (for single-config generators)
+    if(NOT CMAKE_CONFIGURATION_TYPES)
+        get_target_property(CHECK_LOCATION Container::Container IMPORTED_LOCATION)
+        if(CHECK_LOCATION AND NOT EXISTS "${CHECK_LOCATION}")
+            message(WARNING "Container library file does not exist: ${CHECK_LOCATION}")
+        endif()
+    endif()
+endif()
