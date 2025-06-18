@@ -32,60 +32,110 @@ if(TARGET Container::Container)
     message(STATUS "  Existing configurations: ${EXISTING_CONFIGS}")
     message(STATUS "  Existing debug location: ${EXISTING_DEBUG_LOCATION}")
     message(STATUS "  Existing release location: ${EXISTING_RELEASE_LOCATION}")
+    message(STATUS "  Target platform: ${CMAKE_SYSTEM_NAME}")
     
-    # Set or update configuration-specific properties
+    # Set or update configuration-specific properties based on platform
     set_target_properties(Container::Container PROPERTIES
         # Available configurations (use exact case)
         IMPORTED_CONFIGURATIONS "Debug;Release"
-        
-        # Debug configuration
-        IMPORTED_IMPLIB_DEBUG "${CONTAINER_LIB_DIR}/Containerd.lib"
-        IMPORTED_LOCATION_DEBUG "${CONTAINER_BIN_DIR}/Containerd.dll"
-        
-        # Release configuration  
-        IMPORTED_IMPLIB_RELEASE "${CONTAINER_LIB_DIR}/Container.lib"
-        IMPORTED_LOCATION_RELEASE "${CONTAINER_BIN_DIR}/Container.dll"
-        
-        # Configuration mapping with exact case
-        MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release"
-        MAP_IMPORTED_CONFIG_MINSIZEREL "Release"
     )
+    
+    # Platform-specific library configuration
+    if(WIN32)
+        message(STATUS "  Configuring for Windows (DLL + import library)")
+        set_target_properties(Container::Container PROPERTIES
+            # Debug configuration - Windows
+            IMPORTED_IMPLIB_DEBUG "${CONTAINER_LIB_DIR}/Containerd.lib"
+            IMPORTED_LOCATION_DEBUG "${CONTAINER_BIN_DIR}/Containerd.dll"
+            
+            # Release configuration - Windows  
+            IMPORTED_IMPLIB_RELEASE "${CONTAINER_LIB_DIR}/Container.lib"
+            IMPORTED_LOCATION_RELEASE "${CONTAINER_BIN_DIR}/Container.dll"
+            
+            # Configuration mapping with exact case
+            MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release"
+            MAP_IMPORTED_CONFIG_MINSIZEREL "Release"
+        )
+    else()
+        message(STATUS "  Configuring for Unix/Linux (shared library)")
+        set_target_properties(Container::Container PROPERTIES
+            # Debug configuration - Unix/Linux
+            IMPORTED_LOCATION_DEBUG "${CONTAINER_LIB_DIR}/libContainerd.so"
+            
+            # Release configuration - Unix/Linux
+            IMPORTED_LOCATION_RELEASE "${CONTAINER_LIB_DIR}/libContainer.so"
+            
+            # Configuration mapping with exact case
+            MAP_IMPORTED_CONFIG_RELWITHDEBINFO "Release"
+            MAP_IMPORTED_CONFIG_MINSIZEREL "Release"
+        )
+    endif()
     
     # For single-config generators, set appropriate defaults
     if(NOT CMAKE_CONFIGURATION_TYPES)
         # Single-config generator (Ninja, Unix Makefiles)
         if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-            set_target_properties(Container::Container PROPERTIES
-                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Containerd.dll"
-                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Containerd.lib"
-            )
+            if(WIN32)
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Containerd.dll"
+                    IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Containerd.lib"
+                )
+            else()
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_LIB_DIR}/libContainerd.so"
+                )
+            endif()
             message(STATUS "  Single-config Debug: using debug libraries")
         elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
-            set_target_properties(Container::Container PROPERTIES
-                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
-                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
-            )
+            if(WIN32)
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                    IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+                )
+            else()
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_LIB_DIR}/libContainer.so"
+                )
+            endif()
             message(STATUS "  Single-config Release: using release libraries")
         elseif(CMAKE_BUILD_TYPE STREQUAL "RelWithDebInfo")
             # Map to Release
-            set_target_properties(Container::Container PROPERTIES
-                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
-                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
-            )
+            if(WIN32)
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                    IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+                )
+            else()
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_LIB_DIR}/libContainer.so"
+                )
+            endif()
             message(STATUS "  Single-config RelWithDebInfo: using release libraries")
         elseif(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel")
             # Map to Release
-            set_target_properties(Container::Container PROPERTIES
-                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
-                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
-            )
+            if(WIN32)
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                    IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+                )
+            else()
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_LIB_DIR}/libContainer.so"
+                )
+            endif()
             message(STATUS "  Single-config MinSizeRel: using release libraries")
         else()
             # Default to Release for unknown build types
-            set_target_properties(Container::Container PROPERTIES
-                IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
-                IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
-            )
+            if(WIN32)
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_BIN_DIR}/Container.dll"
+                    IMPORTED_IMPLIB "${CONTAINER_LIB_DIR}/Container.lib"
+                )
+            else()
+                set_target_properties(Container::Container PROPERTIES
+                    IMPORTED_LOCATION "${CONTAINER_LIB_DIR}/libContainer.so"
+                )
+            endif()
             message(STATUS "  Single-config Unknown (${CMAKE_BUILD_TYPE}): defaulting to release libraries")
         endif()
     else()
@@ -109,6 +159,16 @@ if(TARGET Container::Container)
     message(STATUS "  Release location: ${FINAL_RELEASE_LOCATION}")
     message(STATUS "  Generic location: ${FINAL_GENERIC_LOCATION}")
     
+    # Platform-specific final verification
+    if(WIN32)
+        get_target_property(FINAL_DEBUG_IMPLIB Container::Container IMPORTED_IMPLIB_DEBUG)
+        get_target_property(FINAL_RELEASE_IMPLIB Container::Container IMPORTED_IMPLIB_RELEASE)
+        get_target_property(FINAL_GENERIC_IMPLIB Container::Container IMPORTED_IMPLIB)
+        message(STATUS "  Debug import library: ${FINAL_DEBUG_IMPLIB}")
+        message(STATUS "  Release import library: ${FINAL_RELEASE_IMPLIB}")
+        message(STATUS "  Generic import library: ${FINAL_GENERIC_IMPLIB}")
+    endif()
+    
 else()
     message(WARNING "Container::Container target not found when configuring properties!")
 endif()
@@ -129,6 +189,7 @@ if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
     message(STATUS "  Include directory: ${CONTAINER_INCLUDE_DIR}")
     message(STATUS "  Library directory: ${CONTAINER_LIB_DIR}")
     message(STATUS "  Binary directory: ${CONTAINER_BIN_DIR}")
+    message(STATUS "  Target platform: ${CMAKE_SYSTEM_NAME}")
     message(STATUS "  Generator type: ${CMAKE_GENERATOR}")
     
     if(CMAKE_CONFIGURATION_TYPES)
@@ -145,8 +206,12 @@ if(NOT ${CMAKE_FIND_PACKAGE_NAME}_FIND_QUIETLY)
     # Show generator expression examples
     if(TARGET Container::Container)
         message(STATUS "Generator expressions for Container::Container:")
-        message(STATUS "  \$<TARGET_FILE:Container::Container> - resolves to actual DLL at build time")
-        message(STATUS "  \$<TARGET_LINKER_FILE:Container::Container> - resolves to import lib at build time")
+        message(STATUS "  \$<TARGET_FILE:Container::Container> - resolves to actual library at build time")
+        if(WIN32)
+            message(STATUS "  \$<TARGET_LINKER_FILE:Container::Container> - resolves to import lib at build time")
+        else()
+            message(STATUS "  \$<TARGET_LINKER_FILE:Container::Container> - resolves to shared lib at build time")
+        endif()
     endif()
 endif()
 
@@ -165,6 +230,14 @@ if(TARGET Container::Container)
         get_target_property(CHECK_LOCATION Container::Container IMPORTED_LOCATION)
         if(CHECK_LOCATION AND NOT EXISTS "${CHECK_LOCATION}")
             message(WARNING "Container library file does not exist: ${CHECK_LOCATION}")
+        endif()
+        
+        # Additional check for Windows import library
+        if(WIN32)
+            get_target_property(CHECK_IMPLIB Container::Container IMPORTED_IMPLIB)
+            if(CHECK_IMPLIB AND NOT EXISTS "${CHECK_IMPLIB}")
+                message(WARNING "Container import library file does not exist: ${CHECK_IMPLIB}")
+            endif()
         endif()
     endif()
 endif()
